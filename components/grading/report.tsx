@@ -16,7 +16,7 @@ const ReportScorePage = () => {
     students: Student[];
     teacherScore: number | null;
     groupAverageScore: number | null;
-    totalAverageScore: number | null; // Added
+    totalAverageScore: number | null;
   }
 
   const [groups, setGroups] = useState<Group[]>([]);
@@ -45,53 +45,6 @@ const ReportScorePage = () => {
     };
     fetchGroups();
   }, []);
-
-  // Theme detection
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    setTheme(mediaQuery.matches ? "dark" : "light");
-
-    const handleThemeChange = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? "dark" : "light");
-    };
-
-    mediaQuery.addEventListener("change", handleThemeChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleThemeChange);
-    };
-  }, []);
-
-  // Filtering groups based on search term
-  const filteredGroups = groups.filter((group) => {
-    const searchString = searchTerm.toLowerCase();
-    return (
-      group.groupId.toLowerCase().includes(searchString) ||
-      group.groupName.toLowerCase().includes(searchString) || // Added search by group name
-      group.students.some((student) =>
-        student.studentName.toLowerCase().includes(searchString)
-      )
-    );
-  });
-
-  // Pagination logic
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentGroups = filteredGroups.slice(indexOfFirstItem, indexOfLastItem);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
-
-  // Handle teacher score change
-  const handleTeacherScoreChange = (groupId: string, value: string) => {
-    setGroups((prevGroups) =>
-      prevGroups.map((group) =>
-        group.groupId === groupId
-          ? { ...group, teacherScore: value !== "" ? Number(value) : null }
-          : group
-      )
-    );
-  };
 
   // Submit teacher scores
   const handleSubmit = async () => {
@@ -143,6 +96,53 @@ const ReportScorePage = () => {
     setIsModalOpen(true);
   };
 
+  // Theme detection
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    setTheme(mediaQuery.matches ? "dark" : "light");
+
+    const handleThemeChange = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? "dark" : "light");
+    };
+
+    mediaQuery.addEventListener("change", handleThemeChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleThemeChange);
+    };
+  }, []);
+
+  // Filtering groups based on search term
+  const filteredGroups = groups.filter((group) => {
+    const searchString = searchTerm.toLowerCase();
+    return (
+      group.groupId.toLowerCase().includes(searchString) ||
+      group.groupName.toLowerCase().includes(searchString) || // Added search by group name
+      group.students.some((student) =>
+        student.studentName.toLowerCase().includes(searchString)
+      )
+    );
+  });
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentGroups = filteredGroups.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
+
+  // Handle teacher score change
+  const handleTeacherScoreChange = (groupId: string, value: string) => {
+    setGroups((prevGroups) =>
+      prevGroups.map((group) =>
+        group.groupId === groupId
+          ? { ...group, teacherScore: value !== "" ? Number(value) : null }
+          : group
+      )
+    );
+  };
+
   return (
     <div
       className={`min-h-screen ${
@@ -170,7 +170,7 @@ const ReportScorePage = () => {
 
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4 text-center">
-          Report Score Page
+          Group Report Score Page
         </h1>
 
         {/* Search Input */}
