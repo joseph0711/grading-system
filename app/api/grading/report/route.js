@@ -1,9 +1,6 @@
-// /api/grading/report/index.js
-
 import { NextResponse } from "next/server";
-import pool from "../../../../lib/db"; // Ensure this path is correct based on your project structure
+import pool from "../../../../lib/db";
 
-// GET Handler
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -47,10 +44,10 @@ export async function GET(request) {
           teacherScore:
             row.teacher_score !== null ? Number(row.teacher_score) : null,
           students: [],
-          groupAverageScore: 0, // To be computed
-          totalAverageScore: null, // To be computed
-          peerScoresGiven: [], // To be added
-          peerScoresReceived: [], // To be added
+          groupAverageScore: 0,
+          totalAverageScore: null,
+          peerScoresGiven: [],
+          peerScoresReceived: [],
         };
       }
 
@@ -105,7 +102,7 @@ export async function GET(request) {
           student_id,
           score_value
       FROM 
-          peer_scores
+          grading.peer_scores
       WHERE 
           course_id = ?
     `;
@@ -148,7 +145,6 @@ export async function GET(request) {
   }
 }
 
-// POST Handler remains unchanged for teacher scores
 export async function POST(request) {
   try {
     const { groups } = await request.json();
