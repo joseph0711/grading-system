@@ -4,12 +4,16 @@ import React, { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
-const ManageCourse = () => {
+interface FinalFromProps {
+  courseId: string;
+  onSuccess: () => void;
+}
+
+const Final: React.FC<FinalFromProps> = ({ courseId, onSuccess }) => {
   interface Student {
     student_id: string;
     name: string;
     score: number | null;
-    course_id: number;
   }
 
   const [students, setStudents] = useState<Student[]>([]);
@@ -19,71 +23,41 @@ const ManageCourse = () => {
   const [feedbackType, setFeedbackType] = useState("success");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  // New state for Submit Confirmation Dialog
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [studentsToSubmit, setStudentsToSubmit] = useState<Student[]>([]);
 
   // Fetch students from the API
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await fetch("/api/ManageCourse");
-        const data = await response.json();
-        console.log("Fetched data: - 1", data);
+    if (courseId) {
+      const fetchStudents = async () => {
+        try {
+          const response = await fetch(
+            `/api/grading/final?courseId=${courseId}`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          const data = await response.json();
 
-        const studentsWithScores = data.map((student: any) => ({
-          student_id: student.id,
-          name: student.name,
-          score:
-            student.score !== null && student.score !== undefined
-              ? Number(student.score)
-              : null,
-          course_id: 3137,
-        }));
+          const studentsWithScores = data.map((student: any) => ({
+            student_id: student.student_id,
+            name: student.name,
+            score:
+              student.score !== null && student.score !== undefined
+                ? Number(student.score)
+                : null,
+            courseId: courseId,
+          }));
 
-        setStudents(studentsWithScores);
-      } catch (error) {
-        console.error("Error fetching student data:", error);
-      }
-    };
-    fetchStudents();
-  }, []);
-
-  // Theme detection
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    setTheme(mediaQuery.matches ? "dark" : "light");
-
-    const handleThemeChange = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? "dark" : "light");
-    };
-
-    mediaQuery.addEventListener("change", handleThemeChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleThemeChange);
-    };
-  }, []);
-
-  const filteredStudents = students.filter((student) => {
-    const searchString = searchTerm.toLowerCase();
-    return (
-      student.name.toLowerCase().includes(searchString) ||
-      student.student_id.toString().toLowerCase().includes(searchString)
-    );
-  });
-
-  // Pagination logic
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentStudents = filteredStudents.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+          setStudents(studentsWithScores);
+        } catch (error) {
+          console.error("Error fetching student data:", error);
+        }
+      };
+      fetchStudents();
+    }
+  }, [courseId]);
 
   // Handle score change
   const handleScoreChange = (student_id: string, value: string) => {
@@ -114,16 +88,16 @@ const ManageCourse = () => {
     setIsSubmitDialogOpen(true);
   };
 
-  // Handle actual submission after confirmation
+  // Handle submission after confirmation modal.
   const handleSubmit = async () => {
     try {
       // Filter out students with empty scores
-      const studentsToSubmit = students.filter(
-        (student) => typeof student.score === "number"
-      );
-
-      // Log the students being submitted
-      console.log("Submitting students:", studentsToSubmit);
+      const studentsToSubmit = students
+        .filter((student) => typeof student.score === "number")
+        .map((student) => ({
+          ...student,
+          courseId: courseId,
+        }));
 
       if (studentsToSubmit.length === 0) {
         setFeedbackType("error");
@@ -132,7 +106,7 @@ const ManageCourse = () => {
         return;
       }
 
-      const response = await fetch("/api/grading/final", {
+      const response = await fetch(`/api/grading/final?courseId=${courseId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,32 +114,61 @@ const ManageCourse = () => {
         body: JSON.stringify({ students: studentsToSubmit }),
       });
 
-      // Log the response status
-      console.log("Response status:", response.status);
-
       const responseData = await response.json();
-      // Log the response data
-      console.log("Response data:", responseData);
 
       if (response.ok) {
         setFeedbackType("success");
         setFeedbackMessage("Scores submitted successfully!");
-        setTimeout(() => setFeedbackMessage(""), 3000);
+        onSuccess();
       } else {
-        console.error("Failed to submit scores");
         setFeedbackType("error");
-        setFeedbackMessage("Failed to submit scores.");
-        setTimeout(() => setFeedbackMessage(""), 3000);
+        setFeedbackMessage(responseData.message || "Failed to submit scores.");
       }
     } catch (error) {
-      console.error("Error during submission:", error);
       setFeedbackType("error");
       setFeedbackMessage("An error occurred while submitting scores.");
       setTimeout(() => setFeedbackMessage(""), 3000);
     } finally {
-      setIsSubmitDialogOpen(false); // Ensure the modal is closed
+      setIsSubmitDialogOpen(false);
+      setTimeout(() => setFeedbackMessage(""), 3000);
     }
   };
+
+  // Theme detection
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    setTheme(mediaQuery.matches ? "dark" : "light");
+
+    const handleThemeChange = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? "dark" : "light");
+    };
+
+    mediaQuery.addEventListener("change", handleThemeChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleThemeChange);
+    };
+  }, []);
+
+  // Filter students based on search term
+  const filteredStudents = students.filter((student) => {
+    const searchString = searchTerm.toLowerCase();
+    return (
+      student.name.toLowerCase().includes(searchString) ||
+      student.student_id.toString().toLowerCase().includes(searchString)
+    );
+  });
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentStudents = filteredStudents.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
 
   return (
     <div
@@ -193,6 +196,9 @@ const ManageCourse = () => {
       )}
 
       <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4 text-center">
+          Final Score Page
+        </h1>
         {/* Search */}
         <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4">
           <div className="w-full sm:w-1/2 mb-2 sm:mb-0">
@@ -405,4 +411,4 @@ const ManageCourse = () => {
   );
 };
 
-export default ManageCourse;
+export default Final;
