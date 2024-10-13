@@ -1,62 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "../../../../lib/db";
 
-export async function POST(request) {
-  try {
-    const { students } = await request.json();
-
-    if (!students || students.length === 0) {
-      return NextResponse.json(
-        { message: "No student scores provided" },
-        { status: 400 }
-      );
-    }
-
-    const query = `
-      INSERT INTO grading.score (student_id, course_id, final_score)
-      VALUES ${students.map(() => "(?, ?, ?)").join(", ")}
-      ON DUPLICATE KEY UPDATE
-        final_score = VALUES(final_score);
-    `;
-
-    const values = students.flatMap((student) => [
-      student.student_id,
-      student.course_id.toString(), // Ensure course_id is a string if needed
-      student.score !== null && student.score !== undefined
-        ? Number(student.score)
-        : null,
-    ]);
-
-    console.log("Executing query:", query);
-    console.log("With values:", values);
-
-    const [result] = await pool.query(query, values);
-
-    if (result.affectedRows > 0) {
-      return NextResponse.json(
-        { message: "Scores updated successfully" },
-        { status: 200 }
-      );
-    } else {
-      return NextResponse.json(
-        { message: "No scores were updated" },
-        { status: 400 }
-      );
-    }
-  } catch (error) {
-    console.error("Error updating student scores:", error);
-    return NextResponse.json(
-      { message: "Server error", error: error.message },
-      { status: 500 }
-    );
-  }
-}
-
 export async function GET(request) {
   try {
-    // Extract course_id from the request URL or set a default value
     const { searchParams } = new URL(request.url);
-    const course_id = searchParams.get('course_id') || '3137'; // Ensure this matches your actual course_id
+    const courseId = searchParams.get("courseId");
 
     const query = `
       SELECT 
@@ -64,22 +12,66 @@ export async function GET(request) {
         u.name AS name, 
         sc.final_score AS score
       FROM 
-        user u
+        grading.user u
       LEFT JOIN 
-        score sc 
+        grading.score sc 
       ON 
         u.user_id = sc.student_id AND sc.course_id = ?
       WHERE
         u.role = 'student';
     `;
 
-    const [students] = await pool.query(query, [course_id]);
-
-    console.log("Fetched students:", students);
+    const [students] = await pool.query(query, [courseId]);
 
     return NextResponse.json(students, { status: 200 });
   } catch (error) {
-    console.error("Error fetching students:", error);
+    console.error("Error fetching students and final scores:", error);
+    return NextResponse.json(
+      { message: "Server error", error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const courseId = searchParams.get("courseId");
+    const { students } = await request.json();
+
+    if (!students || students.length === 0) {
+      return NextResponse.json(
+        { message: "No final scores provided" },
+        { status: 400 }
+      );
+    }
+
+    const scoreRegex = /^(100|[1-9]?[0-9])$/;
+    for (const student of students) {
+      if (!scoreRegex.test(student.score)) {
+        return NextResponse.json(
+          {
+            message: `Invalid score for student ${student.student_id}. Score must be a number between 0 and 100.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const query = students
+      .map(
+        (student) =>
+          `UPDATE grading.score SET final_score = ${student.score} WHERE student_id = '${student.student_id}' AND course_id = '${courseId}'`
+      )
+      .join("; ");
+    const [result] = await pool.query(query);
+
+    return NextResponse.json(
+      { message: "Final scores updated successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating final scores:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
       { status: 500 }
