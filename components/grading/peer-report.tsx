@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface PeerScore {
   scoredGroupId: string;
@@ -8,56 +7,63 @@ interface PeerScore {
 }
 
 interface PeerScoresFormProps {
-  currentGroupId: string;
   courseId: string;
-  studentId: string;
   onSuccess: () => void;
 }
 
 const PeerScoresForm: React.FC<PeerScoresFormProps> = ({
-  currentGroupId,
   courseId,
-  studentId,
   onSuccess,
 }) => {
-  const [peerScores, setPeerScores] = useState<PeerScore[]>([
-    { scoredGroupId: "G2", scoreValue: "" },
-    { scoredGroupId: "G3", scoreValue: "" },
-    { scoredGroupId: "G4", scoreValue: "" },
-    { scoredGroupId: "G5", scoreValue: "" },
-  ]);
+  const [peerScores, setPeerScores] = useState<PeerScore[]>([]);
+  const [userGroupId, setUserGroupId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
+  // Fetch peer scores and user group ID
+  useEffect(() => {
+    if (courseId) {
+      const fetchPeerScores = async () => {
+        setLoading(true);
+        try {
+          const response = await fetch(
+            `/api/grading/peer-report?courseId=${courseId}`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          const data = await response.json();
+          setPeerScores(data.peerScores || []);
+          setUserGroupId(data.userGroupId || "");
+        } catch (error) {
+          console.error("Error fetching peer scores:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchPeerScores();
+    }
+  }, [courseId]);
+
+  // Handle score change
   const handleScoreChange = (index: number, value: string) => {
     const updatedScores = [...peerScores];
     updatedScores[index].scoreValue = value === "" ? "" : Number(value);
     setPeerScores(updatedScores);
   };
 
+  // Handle form submission
   const handleSubmit = async () => {
-    // Validate scores
-    for (const score of peerScores) {
-      if (
-        score.scoreValue === "" ||
-        isNaN(Number(score.scoreValue)) ||
-        Number(score.scoreValue) < 0 ||
-        Number(score.scoreValue) > 100
-      ) {
-        alert("Please enter valid scores between 0 and 100 for all groups.");
-        return;
-      }
-    }
-
-    // Prepare data for submission
     const formattedScores = peerScores.map((score) => ({
       courseId,
-      scorerGroupId: currentGroupId,
+      scorerGroupId: userGroupId,
       scoredGroupId: score.scoredGroupId,
-      studentId,
       scoreValue: Number(score.scoreValue),
     }));
 
     try {
-      const response = await fetch("/api/grading/peer-scores/", {
+      const response = await fetch("/api/grading/peer-report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -69,7 +75,7 @@ const PeerScoresForm: React.FC<PeerScoresFormProps> = ({
 
       if (response.ok) {
         alert("Peer scores submitted successfully!");
-        onSuccess(); // Callback to refresh data or close modal
+        onSuccess();
       } else {
         alert(`Error: ${data.message}`);
       }
@@ -80,29 +86,42 @@ const PeerScoresForm: React.FC<PeerScoresFormProps> = ({
   };
 
   return (
-    <div className="mt-4">
-      <h3 className="text-lg font-semibold mb-2">Assign Peer Scores</h3>
-      {peerScores.map((score, index) => (
-        <div key={score.scoredGroupId} className="mb-2">
-          <label className="flex items-center">
-            Score for Group {score.scoredGroupId}:
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={score.scoreValue}
-              onChange={(e) => handleScoreChange(index, e.target.value)}
-              className="ml-2 w-20 px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-          </label>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-8 pb-20">
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4 text-center">
+          Assign Peer Scores
+        </h1>
+
+        <div className="flex flex-col gap-4">
+          {peerScores.map((score, index) => (
+            <div
+              key={score.scoredGroupId}
+              className="p-4 border rounded-lg bg-white dark:bg-gray-800 flex"
+            >
+              <label className="flex items-center justify-between w-full">
+                <span>Score for Group {score.scoredGroupId}:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={score.scoreValue !== "" ? score.scoreValue : ""}
+                  onChange={(e) => handleScoreChange(index, e.target.value)}
+                  className="ml-2 w-20 px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50 dark:bg-gray-700"
+                />
+              </label>
+            </div>
+          ))}
         </div>
-      ))}
-      <button
-        onClick={handleSubmit}
-        className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-      >
-        Submit Peer Scores
-      </button>
+
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Submit Peer Scores
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
