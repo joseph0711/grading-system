@@ -1,15 +1,27 @@
-// app/api/session/route.js
-import { NextResponse } from 'next/server';
-import { parse } from 'cookie';
+import { NextResponse } from "next/server";
+import { parse } from "cookie";
+import jwt from "jsonwebtoken";
 
 export async function GET(request) {
-  const cookies = parse(request.headers.get('cookie') || '');
-  const sessionToken = cookies.sessionToken;
+  const cookies = parse(request.headers.get("cookie") || "");
+  const token = cookies.sessionToken;
 
-  if (sessionToken) {
-    // Validate session token if necessary
-    return NextResponse.json({ authenticated: true, userId: sessionToken });
+  if (token) {
+    try {
+      const secretKey = process.env.JWT_SECRET_KEY;
+      const decoded = jwt.verify(token, secretKey);
+
+      return NextResponse.json({
+        authenticated: true,
+        user: {
+          account: decoded.account,
+          role: decoded.role,
+        },
+      });
+    } catch (error) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
   } else {
-    return NextResponse.json({ authenticated: false });
+    return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 }
