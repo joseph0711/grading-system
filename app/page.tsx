@@ -4,57 +4,79 @@ import { useState, useEffect } from "react";
 import TeacherHome from "../components/TeacherHome";
 import Login from "../components/login";
 import StudentHome from "../components/StudentHome";
+import SelectCourse from "../components/select-course";
 
 export default function AuthPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  // On component mount, check if the user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
-      const res = await fetch('/api/session');
+      const res = await fetch("/api/session");
       const data = await res.json();
       if (data.authenticated) {
-        setIsAuthenticated(true); // Set authenticated if the session is valid
-        setRole(data.role);
+        setIsAuthenticated(true);
+        setRole(data.user.role);
       }
     };
     checkAuth();
   }, []);
 
-  const handleLogin = async (account: string, password: string, rememberMe: boolean) => {
-    const res = await fetch('/api/login', {
-      method: 'POST',
+  const handleLogin = async (
+    account: string,
+    password: string,
+    rememberMe: boolean
+  ) => {
+    const res = await fetch("/api/login", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ account: account, password, rememberMe })
+      body: JSON.stringify({ account, password, rememberMe }),
     });
 
-    const data = await res.json();
-    
     if (res.ok) {
-      setIsAuthenticated(true);
-      setRole(data.role);
+      const sessionRes = await fetch("/api/session");
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+        if (sessionData.authenticated) {
+          setIsAuthenticated(true);
+          setRole(sessionData.user.role); // Set the role from the session
+        }
+      } else {
+        alert("Failed to retrieve session data after login.");
+      }
     } else {
+      const data = await res.json();
       alert(data.message || "Login failed! Please check your credentials.");
     }
   };
 
   const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    setIsAuthenticated(false); // Clear the authentication state
+    await fetch("/api/logout", { method: "POST" });
+    setIsAuthenticated(false);
     setRole(null);
+    setSelectedCourse(null);
   };
 
-  // Conditional rendering based on authentication and role
+  const handleCourseSelect = (courseId: string) => {
+    setSelectedCourse(courseId);
+  };
+
   return (
     <div>
       {isAuthenticated ? (
-        role === "student" ? (
-          <StudentHome onLogout={handleLogout} />
+        selectedCourse ? (
+          role === "student" ? (
+            <StudentHome onLogout={handleLogout} courseId={selectedCourse} />
+          ) : role === "teacher" ? (
+            <TeacherHome onLogout={handleLogout} courseId={selectedCourse} />
+          ) : (
+            <div>Loading...</div>
+          )
         ) : (
-          <TeacherHome onLogout={handleLogout} />
+          <SelectCourse onCourseSelect={handleCourseSelect} onLogout={handleLogout} />
         )
       ) : (
         <Login onLogin={handleLogin} />
