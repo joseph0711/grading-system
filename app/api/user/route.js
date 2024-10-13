@@ -1,4 +1,3 @@
-// app/api/user/route.js
 import { NextResponse } from 'next/server';
 import pool from '../../../lib/db';
 import { parse } from 'cookie';
@@ -12,7 +11,6 @@ export async function GET(request) {
   }
 
   try {
-    // Assuming sessionToken is the user ID
     const [rows] = await pool.query('SELECT * FROM user WHERE id = ?', [sessionToken]);
 
     if (rows.length === 0) {
