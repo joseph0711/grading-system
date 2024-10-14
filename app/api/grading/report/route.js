@@ -64,6 +64,8 @@ export async function GET(request) {
 
     const groupsWithScores = Object.values(groupsMap);
 
+    console.log("Group data:", groupsWithScores.students);
+
     // Compute groupAverageScore for each group
     groupsWithScores.forEach((group) => {
       const totalScore = group.students.reduce(
