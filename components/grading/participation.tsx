@@ -47,8 +47,9 @@ const Participation: React.FC<ParticipationFromProps> = ({
             student_id: student.student_id,
             name: student.name,
             score:
-              student.score !== null && student.score !== undefined
-                ? Number(student.score)
+              student.participation_score !== null &&
+              student.participation_score !== undefined
+                ? Number(student.participation_score)
                 : null,
             courseId: courseId,
           }));
