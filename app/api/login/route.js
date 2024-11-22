@@ -10,9 +10,8 @@ export async function POST(request) {
   try {
     // Check if the account exists in the 'user' table
     const [rows] = await pool.query(
-      `SELECT a.account, a.password, u.role 
-       FROM grading.account a 
-       JOIN grading.user u ON a.account = u.user_id 
+      `SELECT a.account, a.password, a.role 
+       FROM user.account a 
        WHERE a.account = ?`,
       [account]
     );
