@@ -44,8 +44,8 @@ const Final: React.FC<FinalFromProps> = ({ courseId, onSuccess }) => {
             student_id: student.student_id,
             name: student.name,
             score:
-              student.score !== null && student.score !== undefined
-                ? Number(student.score)
+              student.final_score !== null && student.final_score !== undefined
+                ? Number(student.final_score)
                 : null,
             courseId: courseId,
           }));
