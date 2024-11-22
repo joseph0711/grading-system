@@ -2,12 +2,30 @@ import { NextResponse } from "next/server";
 import pool from "../../../lib/db";
 
 // Fetch all student information
-export async function GET() {
+export async function GET(request) {
   try {
+    const courseId = request.nextUrl.searchParams.get("courseId");
+
+    if (!courseId) {
+      return NextResponse.json(
+        { message: "No course ID provided" },
+        { status: 400 }
+      );
+    }
+
     const [rows] = await pool.query(
-      "SELECT user_id AS id, department, `class`, name FROM grading.user WHERE role = ?",
-      ["student"]
+      `SELECT s.student_id AS id, s.name, d.department_name AS department, s.class
+      FROM grading.student_enrolled_info sei
+      JOIN grading.student s ON sei.student_id = s.student_id 
+      JOIN grading.department d ON s.department_id = d.department_id
+      WHERE sei.course_id = ?
+      ORDER BY s.student_id`,
+      [courseId]
     );
+
+    if (rows.length === 0) {
+      return NextResponse.json([], { status: 200 });
+    }
 
     return NextResponse.json(rows);
   } catch (error) {
@@ -21,11 +39,9 @@ export async function PUT(request) {
   try {
     const { id, department, class: className, name } = await request.json();
 
-    console.log("Request data:", { id, department, className, name });
-
     const [existingStudentRows] = await pool.query(
-      "SELECT department, `class`, name FROM grading.user WHERE user_id = ? AND role = ?",
-      [id, "student"]
+      "SELECT department, `class`, name FROM grading.student WHERE student_id = ?",
+      [id]
     );
 
     if (existingStudentRows.length === 0) {
@@ -53,9 +69,9 @@ export async function PUT(request) {
 
     // Update query
     const query = `
-      UPDATE user 
+      UPDATE grading.student 
       SET department = ?, \`class\` = ?, name = ? 
-      WHERE user_id = ? AND role = 'student'
+      WHERE student_id = ?
     `;
 
     // Execute the update query
@@ -98,8 +114,8 @@ export async function DELETE(request) {
 
     // Delete query for bulk deletion
     const query = `
-      DELETE FROM grading.user 
-      WHERE user_id IN (?) AND role = 'student'
+      DELETE FROM grading.student 
+      WHERE user_id IN (?)
     `;
 
     const [result] = await pool.query(query, [ids]);
