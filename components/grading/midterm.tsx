@@ -44,8 +44,9 @@ const Midterm: React.FC<MidtermFromProps> = ({ courseId, onSuccess }) => {
             student_id: student.student_id,
             name: student.name,
             score:
-              student.score !== null && student.score !== undefined
-                ? Number(student.score)
+              student.midterm_score !== null &&
+              student.midterm_score !== undefined
+                ? Number(student.midterm_score)
                 : null,
             courseId: courseId,
           }));
