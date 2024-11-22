@@ -5,6 +5,7 @@ import pool from "../../../lib/db";
 export async function GET(request) {
   try {
     const courseId = request.nextUrl.searchParams.get("courseId");
+    console.log("Course ID:", courseId);
 
     if (!courseId) {
       return NextResponse.json(
@@ -22,7 +23,9 @@ export async function GET(request) {
       FROM 
         grading.course c
       LEFT JOIN 
-        grading.user u ON c.teacher_id = u.user_id
+        grading.teaching_info ti ON c.course_id = ti.course_id
+      LEFT JOIN
+        grading.teacher u ON ti.teacher_id = u.teacher_id
       WHERE 
         c.course_id = ?
       `,
