@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "../../../lib/db";
 import jwt from "jsonwebtoken";
 import { parse } from "cookie";
+import { cookies } from 'next/headers';
 
 export async function GET(request) {
   try {
@@ -28,10 +29,11 @@ export async function GET(request) {
       );
     }
 
-    const userId = decoded.account;
-    const userRole = decoded.role;
+    const account = decoded.account;
+    const role = decoded.role;
+    console.log(account, role);
 
-    if (!userId || !userRole) {
+    if (!account || !role) {
       return NextResponse.json(
         { message: "User ID or role not found in token" },
         { status: 400 }
@@ -40,15 +42,27 @@ export async function GET(request) {
 
     let courses = [];
 
-    if (userRole === "student" || userRole === "teacher") {
+    if (role === "student") {
       const [courseRows] = await pool.query(
         `
         SELECT DISTINCT c.course_id, c.course_name, c.course_description
         FROM grading.course c
-        JOIN grading.user u ON u.course_id = c.course_id
-        WHERE u.user_id = ?
+        JOIN grading.student_enrolled_info sei ON sei.course_id = c.course_id
+        WHERE sei.student_id = ?
         `,
-        [userId]
+        [account]
+      );
+
+      courses = courseRows;
+    } else if (role === "teacher") {
+      const [courseRows] = await pool.query(
+        `
+        SELECT DISTINCT c.course_id, c.course_name, c.course_description
+        FROM grading.course c
+        JOIN grading.teaching_info ti ON ti.course_id = c.course_id
+        WHERE ti.teacher_id = ?
+        `,
+        [account]
       );
 
       courses = courseRows;
@@ -64,12 +78,13 @@ export async function GET(request) {
       courses.map(async (course) => {
         const [teacherRows] = await pool.query(
           `
-          SELECT u.name
-          FROM grading.user u
-          JOIN grading.course c ON u.course_id = c.course_id
-          WHERE c.course_id = ? and u.role = ?
+          SELECT t.name
+          FROM grading.teaching_info ti
+          JOIN grading.course c ON ti.course_id = c.course_id
+          JOIN grading.teacher t ON t.teacher_id = ti.teacher_id
+          WHERE c.course_id = ?
           `,
-          [course.course_id, "teacher"]
+          [course.course_id]
         );
         const teacherName =
           teacherRows.length > 0 ? teacherRows[0].name : "Unknown";
