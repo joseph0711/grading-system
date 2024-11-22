@@ -40,17 +40,31 @@ export async function GET(request) {
 
     // Fetch the user's group
     const query = `
-      SELECT gm.group_id AS user_group_id, ps.scored_group_id, ps.score_value
-      FROM grading.group_members gm
-      LEFT JOIN grading.peer_scores ps ON ps.scorer_group_id = gm.group_id and gm.student_id = ps.student_id
-      WHERE gm.student_id = ? AND ps.course_id = ?
+      WITH UserGroup AS (
+        SELECT group_id
+        FROM grading.group
+        WHERE student_id = ? AND course_id = ?
+      )
+      SELECT DISTINCT 
+        g.group_id as scored_group_id,
+        ps.score_value,
+        ug.group_id as user_group_id
+      FROM grading.group g
+      CROSS JOIN UserGroup ug
+      LEFT JOIN grading.report_peer_scores ps ON 
+          ps.scored_group_id = g.group_id AND 
+          ps.student_id = ? AND
+          ps.course_id = ?
+      WHERE g.course_id = ?
+        AND g.group_id != ug.group_id
+      ORDER BY g.group_id
     `;
     console.log("courseId:", courseId);
-    const [rows] = await pool.query(query, [studentId, courseId]);
+    const [rows] = await pool.query(query, [studentId, courseId, studentId, courseId, courseId]);
 
     const peerScores = rows.map((row) => ({
       scoredGroupId: row.scored_group_id,
-      scoreValue: row.score_value,
+      scoreValue: row.score_value || "",
     }));
 
     const userGroupId = rows.length > 0 ? rows[0].user_group_id : null;
