@@ -4,142 +4,102 @@ import pool from "../../../../lib/db";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const course_id = searchParams.get("course_id") || "3137";
+    const course_id = searchParams.get("course_id");
+
+    if (!course_id) {
+      return NextResponse.json(
+        { message: "Course ID is required" },
+        { status: 400 }
+      );
+    }
 
     const query = `
+      WITH GroupAverages AS (
+        SELECT 
+          rps.scored_group_id,
+          rps.course_id,
+          AVG(rps.score_value) as group_average_score
+        FROM report_peer_scores rps
+        WHERE rps.course_id = ${pool.escape(course_id)}
+        GROUP BY rps.scored_group_id, rps.course_id
+      )
       SELECT 
-        sg.group_id,
-        sg.group_name,
-        u.user_id AS student_id,
-        u.name AS student_name,
-        s.report_score AS student_score,
-        gts.score_value AS teacher_score
-      FROM 
-        grading.student_group sg
-      LEFT JOIN 
-        grading.group_members gm ON sg.group_id = gm.group_id
-      LEFT JOIN 
-        grading.user u ON gm.student_id = u.user_id
-      LEFT JOIN 
-        grading.score s ON sg.course_id = s.course_id AND gm.student_id = s.student_id
-      LEFT JOIN 
-        grading.group_teacher_scores gts ON sg.group_id = gts.group_id AND sg.course_id = gts.course_id
-      WHERE 
-        sg.course_id = ?
-      ORDER BY 
-        sg.group_id;
-    `;
+        g.group_id,
+        CONCAT('Group ', g.group_id) as group_name,
+        rts.score as teacher_score,
+        ga.group_average_score as group_average_score,
+        CASE 
+          WHEN rts.score IS NOT NULL AND ga.group_average_score IS NOT NULL 
+          THEN (rts.score + ga.group_average_score) / 2 
+          ELSE NULL 
+        END as total_average_score,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'studentId', s.student_id,
+            'studentName', s.name
+          )
+        ) as students,
+        (
+          SELECT JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'scoringGroupId', DISTINCT_GROUPS.group_id,
+              'groupName', DISTINCT_GROUPS.group_name,
+              'scores', DISTINCT_GROUPS.scores
+            )
+          )
+          FROM (
+            SELECT DISTINCT
+              scoring_group.group_id,
+              CONCAT('Group ', scoring_group.group_id) as group_name,
+              (
+                SELECT JSON_ARRAYAGG(
+                  JSON_OBJECT(
+                    'studentId', rps.student_id,
+                    'studentName', scorer.name,
+                    'score', rps.score_value
+                  )
+                )
+                FROM report_peer_scores rps
+                JOIN student scorer ON rps.student_id = scorer.student_id
+                JOIN \`group\` scorer_group ON scorer.student_id = scorer_group.student_id
+                  AND scorer_group.course_id = g.course_id
+                WHERE rps.scored_group_id = g.group_id
+                  AND rps.course_id = g.course_id
+                  AND scorer_group.group_id = scoring_group.group_id
+              ) as scores
+            FROM \`group\` scoring_group
+            WHERE scoring_group.course_id = g.course_id
+              AND scoring_group.group_id != g.group_id
+          ) AS DISTINCT_GROUPS
+        ) as scores_by_group
+      FROM \`group\` g
+      JOIN student s ON g.student_id = s.student_id
+      JOIN student_enrolled_info sei ON s.student_id = sei.student_id 
+        AND sei.course_id = g.course_id
+      LEFT JOIN report_teacher_scores rts ON g.group_id = rts.group_id 
+        AND g.course_id = rts.course_id
+      LEFT JOIN GroupAverages ga ON g.group_id = ga.scored_group_id
+      WHERE g.course_id = ${pool.escape(course_id)}
+      GROUP BY g.group_id, rts.score, ga.group_average_score`;
 
-    const [rows] = await pool.query(query, [course_id]);
+    console.log(query);
+    const [rows] = await pool.query(query);
 
-    // Transform the rows into a structured format
-    const groupsMap = {};
+    const formattedGroups = rows.map((row) => ({
+      groupId: row.group_id.toString(),
+      groupName: row.group_name,
+      teacherScore: row.teacher_score,
+      groupAverageScore: parseFloat(row.group_average_score) || null,
+      totalAverageScore: row.total_average_score,
+      students: row.students || [],
+      scoresByGroup: row.scores_by_group || [],
+    }));
 
-    rows.forEach((row) => {
-      const groupId = row.group_id;
-      if (!groupsMap[groupId]) {
-        groupsMap[groupId] = {
-          groupId: groupId,
-          groupName: row.group_name,
-          teacherScore:
-            row.teacher_score !== null ? Number(row.teacher_score) : null,
-          students: [],
-          groupAverageScore: 0,
-          totalAverageScore: null,
-          peerScoresGiven: [],
-          peerScoresReceived: [],
-        };
-      }
+    console.log(formattedGroups);
 
-      // Add student details
-      if (row.student_id) {
-        groupsMap[groupId].students.push({
-          studentId: row.student_id,
-          studentName: row.student_name,
-          studentScore:
-            row.student_score !== null ? Number(row.student_score) : null,
-        });
-      }
-    });
-
-    const groupsWithScores = Object.values(groupsMap);
-
-    console.log("Group data:", groupsWithScores.students);
-
-    // Compute groupAverageScore for each group
-    groupsWithScores.forEach((group) => {
-      const totalScore = group.students.reduce(
-        (sum, student) => sum + (student.studentScore || 0),
-        0
-      );
-      const count = group.students.length;
-      group.groupAverageScore =
-        count > 0 ? parseFloat((totalScore / count).toFixed(2)) : null;
-    });
-
-    // Compute totalAverageScore for each group (average of other groups' groupAverageScore)
-    groupsWithScores.forEach((currentGroup) => {
-      const otherGroups = groupsWithScores.filter(
-        (group) =>
-          group.groupId !== currentGroup.groupId &&
-          group.groupAverageScore !== null
-      );
-      const totalOtherScores = otherGroups.reduce(
-        (sum, group) => sum + group.groupAverageScore,
-        0
-      );
-      const countOtherGroups = otherGroups.length;
-      currentGroup.totalAverageScore =
-        countOtherGroups > 0
-          ? parseFloat((totalOtherScores / countOtherGroups).toFixed(2))
-          : null;
-    });
-
-    // Fetch peer scores given by each group
-    const peerScoresGivenQuery = `
-      SELECT 
-          course_id,
-          scorer_group_id,
-          scored_group_id,
-          student_id,
-          score_value
-      FROM 
-          grading.peer_scores
-      WHERE 
-          course_id = ?
-    `;
-
-    const [peerGivenRows] = await pool.query(peerScoresGivenQuery, [course_id]);
-
-    // Assign peerScoresGiven to groups
-    peerGivenRows.forEach((score) => {
-      const group = groupsMap[score.scorer_group_id];
-      if (group) {
-        group.peerScoresGiven.push({
-          scoredGroupId: score.scored_group_id,
-          studentId: score.student_id,
-          scoreValue: score.score_value,
-        });
-      }
-    });
-
-    const [peerReceivedRows] = await pool.query(peerScoresGivenQuery, [
-      course_id,
-    ]);
-
-    peerReceivedRows.forEach((score) => {
-      const group = groupsMap[score.scored_group_id];
-      if (group) {
-        group.peerScoresReceived.push({
-          scorerGroupId: score.scorer_group_id,
-          studentId: score.student_id,
-          scoreValue: score.score_value,
-        });
-      }
-    });
-    return NextResponse.json({ groups: groupsWithScores }, { status: 200 });
+    return NextResponse.json({ groups: formattedGroups }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching group data:", error);
+    console.error("Error in API:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
       { status: 500 }
@@ -149,49 +109,33 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const course_id = searchParams.get("course_id");
+
     const { groups } = await request.json();
+    const teacher_id = "T001";
 
-    if (!groups || groups.length === 0) {
-      return NextResponse.json(
-        { message: "No group scores provided" },
-        { status: 400 }
-      );
-    }
-
-    const course_id = "3137"; // Adjust as needed or extract from request
-    const teacher_id = "T10823001"; // Replace with actual teacher ID from authentication
-
-    // Prepare the query to update the teacher scores
     const query = `
-      INSERT INTO group_teacher_scores (group_id, teacher_id, course_id, score_value)
-      VALUES ${groups.map(() => "(?, ?, ?, ?)").join(", ")}
+      INSERT INTO grading.report_teacher_scores 
+        (teacher_id, course_id, group_id, score) 
+      VALUES 
+        ${groups.map(() => "(?, ?, ?, ?)").join(", ")}
       ON DUPLICATE KEY UPDATE
-        score_value = VALUES(score_value);
-    `;
+        score = VALUES(score)`;
 
     const values = groups.flatMap((group) => [
-      group.groupId,
       teacher_id,
       course_id,
+      group.groupId,
       group.teacherScore,
     ]);
 
-    console.log("Executing query:", query);
-    console.log("With values:", values);
+    await pool.query(query, values);
 
-    const [result] = await pool.query(query, values);
-
-    if (result.affectedRows > 0) {
-      return NextResponse.json(
-        { message: "Teacher scores updated successfully" },
-        { status: 200 }
-      );
-    } else {
-      return NextResponse.json(
-        { message: "No teacher scores were updated" },
-        { status: 400 }
-      );
-    }
+    return NextResponse.json(
+      { message: "Teacher scores updated successfully" },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error updating teacher scores:", error);
     return NextResponse.json(
