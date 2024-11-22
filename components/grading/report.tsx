@@ -1,24 +1,36 @@
 "use client";
 
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, JSX } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 
+interface Student {
+  studentId: string;
+  studentName: string;
+}
+
+interface StudentScore {
+  studentId: string;
+  studentName: string;
+  score: number;
+}
+
+interface GroupScore {
+  scoringGroupId: string;
+  groupName: string;
+  scores: StudentScore[];
+}
+
+interface Group {
+  groupId: string;
+  groupName: string;
+  teacherScore: number | null;
+  groupAverageScore: number | null;
+  totalAverageScore: number | null;
+  students: Student[];
+  scoresByGroup: GroupScore[];
+}
+
 const ReportScorePage = () => {
-  interface Student {
-    studentId: string;
-    studentName: string;
-    studentScore: number | null;
-  }
-
-  interface Group {
-    groupId: string;
-    groupName: string;
-    students: Student[];
-    teacherScore: number | null;
-    groupAverageScore: number | null;
-    totalAverageScore: number | null;
-  }
-
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [theme, setTheme] = useState("light");
@@ -37,19 +49,68 @@ const ReportScorePage = () => {
       try {
         const response = await fetch(`/api/grading/report/?course_id=3137`);
         const data = await response.json();
-        console.log("Fetched groups:", data.groups);
-        setGroups(data.groups);
+        
+        // Add null check and ensure groups is always an array
+        setGroups(data.groups || []);
       } catch (error) {
         console.error("Error fetching group data:", error);
+        setGroups([]); // Set empty array on error
       }
     };
     fetchGroups();
   }, []);
 
-  // Submit teacher scores
+  // Handle opening the modal with specific group details
+  const handleOpenModal = (currentGroupId: string) => {
+    if (!groups) return;
+    
+    // Find the current group instead of filtering it out
+    const currentGroup = groups.find((g) => g.groupId === currentGroupId);
+    if (currentGroup) {
+      setModalData([currentGroup]); // Set only the current group data
+      setIsModalOpen(true);
+    }
+  };
+
+  // Filtering groups based on search term with null check
+  const filteredGroups = groups?.filter((group) => {
+    if (!group) return false;
+    
+    const searchString = searchTerm.toLowerCase();
+    return (
+      group.groupName.toLowerCase().includes(searchString) ||
+      group.students.some((student) =>
+        student.studentName.toLowerCase().includes(searchString)
+      )
+    );
+  }) || [];
+
+  // Pagination logic with null check
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentGroups = filteredGroups.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
+
+  // Handle teacher score change with null check
+  const handleTeacherScoreChange = (groupId: string, value: string) => {
+    if (!groups) return;
+    
+    setGroups((prevGroups) =>
+      prevGroups.map((group) =>
+        group.groupId === groupId
+          ? { ...group, teacherScore: value !== "" ? Number(value) : null }
+          : group
+      )
+    );
+  };
+
+  // Submit handler with null check
   const handleSubmit = async () => {
     try {
-      // Filter out groups where teacherScore is a number
+      if (!groups) return;
+
       const groupsToSubmit = groups.filter(
         (group) => typeof group.teacherScore === "number"
       );
@@ -69,31 +130,20 @@ const ReportScorePage = () => {
         body: JSON.stringify({ groups: groupsToSubmit }),
       });
 
-      const responseData = await response.json();
-
       if (response.ok) {
         setFeedbackType("success");
         setFeedbackMessage("Teacher scores submitted successfully!");
-        setTimeout(() => setFeedbackMessage(""), 3000);
       } else {
-        console.error("Failed to submit teacher scores");
         setFeedbackType("error");
         setFeedbackMessage("Failed to submit teacher scores.");
-        setTimeout(() => setFeedbackMessage(""), 3000);
       }
     } catch (error) {
       console.error("Error during submission:", error);
       setFeedbackType("error");
       setFeedbackMessage("An error occurred while submitting scores.");
+    } finally {
       setTimeout(() => setFeedbackMessage(""), 3000);
     }
-  };
-
-  // Handle opening the modal with specific group details
-  const handleOpenModal = (currentGroupId: string) => {
-    const otherGroups = groups.filter((g) => g.groupId !== currentGroupId);
-    setModalData(otherGroups);
-    setIsModalOpen(true);
   };
 
   // Theme detection
@@ -111,37 +161,6 @@ const ReportScorePage = () => {
       mediaQuery.removeEventListener("change", handleThemeChange);
     };
   }, []);
-
-  // Filtering groups based on search term
-  const filteredGroups = groups.filter((group) => {
-    const searchString = searchTerm.toLowerCase();
-    return (
-      group.groupId.toLowerCase().includes(searchString) ||
-      group.groupName.toLowerCase().includes(searchString) || // Added search by group name
-      group.students.some((student) =>
-        student.studentName.toLowerCase().includes(searchString)
-      )
-    );
-  });
-
-  // Pagination logic
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentGroups = filteredGroups.slice(indexOfFirstItem, indexOfLastItem);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
-
-  // Handle teacher score change
-  const handleTeacherScoreChange = (groupId: string, value: string) => {
-    setGroups((prevGroups) =>
-      prevGroups.map((group) =>
-        group.groupId === groupId
-          ? { ...group, teacherScore: value !== "" ? Number(value) : null }
-          : group
-      )
-    );
-  };
 
   return (
     <div
@@ -177,7 +196,7 @@ const ReportScorePage = () => {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Search by group ID, group name, or student name..."
+            placeholder="Search by group name or student name..."
             className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 ${
               theme === "dark"
                 ? "bg-gray-700 text-white"
@@ -189,7 +208,7 @@ const ReportScorePage = () => {
         </div>
 
         {/* Groups */}
-        {filteredGroups.length > 0 ? (
+        {currentGroups && currentGroups.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {currentGroups.map((group) => (
@@ -202,7 +221,7 @@ const ReportScorePage = () => {
                   }`}
                 >
                   <h2 className="text-xl font-semibold mb-2">
-                    {group.groupName} (ID: {group.groupId})
+                    {group.groupName}
                   </h2>
                   <ul className="mb-2">
                     {group.students.map((student) => (
@@ -363,45 +382,58 @@ const ReportScorePage = () => {
                     </button>
                   </div>
 
-                  {modalData.length > 0 ? (
-                    <>
-                      {modalData.map((group) => (
-                        <div key={group.groupId} className="mb-6">
-                          <h4 className="text-lg font-semibold mb-2">
-                            {group.groupName} (ID: {group.groupId})
-                          </h4>
-                          <div className="mt-2">
-                            <strong>Students:</strong>
+                  {/* Students Score Detail Modal content */}
+                  {modalData.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold mb-2">
+                        Scores received by {modalData[0].groupName}
+                      </h4>
+                      <div className="mt-2">
+                        <strong>Group Members:</strong>
+                        <ul className="list-disc pl-5 mb-4">
+                          {modalData[0].students.map((student) => (
+                            <li key={student.studentId}>
+                              {student.studentId} - {student.studentName}
+                            </li>
+                          ))}
+                        </ul>
+                        
+                        <strong>Scores Received from Other Groups:</strong>
+                        {modalData[0].scoresByGroup.map((groupScore) => (
+                          <div key={groupScore.scoringGroupId} className="mt-4 ml-4 p-4 border rounded-lg">
+                            <h5 className="font-semibold">{groupScore.groupName}</h5>
                             <ul className="list-disc pl-5">
-                              {group.students.map((student) => (
-                                <li key={student.studentId}>
-                                  {student.studentId} - {student.studentName} -
-                                  Score:{" "}
-                                  {student.studentScore !== null
-                                    ? student.studentScore
-                                    : "N/A"}
+                              {groupScore.scores.map((score) => (
+                                <li key={score.studentId} className="mt-2">
+                                  {score.studentId} - {score.studentName}: {" "}
+                                  <span className="font-semibold">{score.score}</span>
                                 </li>
                               ))}
                             </ul>
                           </div>
+                        ))}
+                      </div>
 
-                          {/* Separator Line */}
-                          <hr className="my-4 border-gray-300" />
-                        </div>
-                      ))}
-
-                      {/* Total Average Score at the bottom */}
-                      <p className="mt-4 text-lg">
-                        <strong>
-                          Total Average Score:{" "}
-                          {modalData[0].totalAverageScore !== null
-                            ? modalData[0].totalAverageScore.toFixed(2)
-                            : "N/A"}
-                        </strong>
-                      </p>
-                    </>
-                  ) : (
-                    <p>No group details available.</p>
+                      {/* Scores Summary */}
+                      <div className="mt-4 p-4 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                        <p className="text-lg">
+                          <strong>
+                            Group Average Score:{" "}
+                            {modalData[0].groupAverageScore !== null
+                              ? modalData[0].groupAverageScore.toFixed(2)
+                              : "N/A"}
+                          </strong>
+                        </p>
+                        <p className="text-lg">
+                          <strong>
+                            Total Average Score:{" "}
+                            {modalData[0].totalAverageScore !== null
+                              ? modalData[0].totalAverageScore.toFixed(2)
+                              : "N/A"}
+                          </strong>
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {/* Close Button */}
