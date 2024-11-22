@@ -8,18 +8,18 @@ export async function GET(request) {
 
     const query = `
       SELECT 
-        u.user_id AS student_id, 
-        u.name AS name, 
-        sc.attendance_score AS score
+        sc.student_id,
+        s.name,
+        sc.attendance_score
       FROM 
-        grading.user u
-      LEFT JOIN 
-        grading.score sc 
+        grading.score sc
+      JOIN 
+        grading.student s 
       ON 
-        u.user_id = sc.student_id AND sc.course_id = ?
-      WHERE
-        u.role = 'student';
-    `;
+        sc.student_id = s.student_id
+      WHERE 
+        sc.course_id = ?;
+      `;
 
     const [students] = await pool.query(query, [course_id]);
 
