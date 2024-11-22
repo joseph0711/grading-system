@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from "react";
 
 interface PeerScore {
-  scoredGroupId: string;
+  scoredGroupId: number;
   scoreValue: number | "";
+  userGroupId?: number;
 }
 
 interface PeerScoresFormProps {
@@ -55,12 +56,18 @@ const PeerScoresForm: React.FC<PeerScoresFormProps> = ({
 
   // Handle form submission
   const handleSubmit = async () => {
-    const formattedScores = peerScores.map((score) => ({
-      courseId,
-      scorerGroupId: userGroupId,
-      scoredGroupId: score.scoredGroupId,
-      scoreValue: Number(score.scoreValue),
-    }));
+    const formattedScores = peerScores
+      .filter(score => score.scoreValue !== "")
+      .map((score) => ({
+        courseId,
+        scoredGroupId: score.scoredGroupId,
+        scoreValue: Number(score.scoreValue),
+      }));
+
+    if (formattedScores.length === 0) {
+      alert("Please enter at least one score");
+      return;
+    }
 
     try {
       const response = await fetch("/api/grading/peer-report", {
@@ -68,6 +75,7 @@ const PeerScoresForm: React.FC<PeerScoresFormProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ peerScores: formattedScores }),
       });
 
@@ -92,35 +100,43 @@ const PeerScoresForm: React.FC<PeerScoresFormProps> = ({
           Assign Peer Scores
         </h1>
 
-        <div className="flex flex-col gap-4">
-          {peerScores.map((score, index) => (
-            <div
-              key={score.scoredGroupId}
-              className="p-4 border rounded-lg bg-white dark:bg-gray-800 flex"
-            >
-              <label className="flex items-center justify-between w-full">
-                <span>Score for Group {score.scoredGroupId}:</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={score.scoreValue !== "" ? score.scoreValue : ""}
-                  onChange={(e) => handleScoreChange(index, e.target.value)}
-                  className="ml-2 w-20 px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50 dark:bg-gray-700"
-                />
-              </label>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center">Loading...</div>
+        ) : peerScores.length === 0 ? (
+          <div className="text-center">No other groups found to score</div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {peerScores.map((score, index) => (
+              <div
+                key={score.scoredGroupId}
+                className="p-4 border rounded-lg bg-white dark:bg-gray-800 flex"
+              >
+                <label className="flex items-center justify-between w-full">
+                  <span>Score for Group {score.scoredGroupId}:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={score.scoreValue !== "" ? score.scoreValue : ""}
+                    onChange={(e) => handleScoreChange(index, e.target.value)}
+                    className="ml-2 w-20 px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50 dark:bg-gray-700"
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-          >
-            Submit Peer Scores
-          </button>
-        </div>
+        {!loading && peerScores.length > 0 && (
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={handleSubmit}
+              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              Submit Peer Scores
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
