@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, Fragment } from "react";
+import { Dialog, Menu, Transition } from "@headlessui/react";
 import {
-  Dialog,
-  DialogBackdrop,
-  DialogPanel,
-  DialogTitle,
-  Menu,
-  Transition,
-} from "@headlessui/react";
-import { ExclamationTriangleIcon, TrashIcon, PencilIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+  ExclamationTriangleIcon,
+  TrashIcon,
+  PencilIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 
-const ManageCourse = () => {
+interface ManageCourseProps {
+  courseId: string;
+}
+
+const ManageCourse: React.FC<ManageCourseProps> = ({ courseId }) => {
   // Handle page change
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -62,19 +64,22 @@ const ManageCourse = () => {
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
-        const courseId = '3137';
-        const response = await fetch(`/api/CourseDescription?courseId=${courseId}`);
+        const response = await fetch(
+          `/api/CourseDescription?courseId=${courseId}`
+        );
         const data = await response.json();
-  
+
         if (response.ok) {
-          console.log('Fetched course data:', data);
-          setCourseDescription(data.description ?? 'No description available.');
-          setTeacherName(data.teacher_name ?? 'No teacher assigned yet.');
+          console.log("Fetched course data:", data);
+          setCourseDescription(
+            data.course_description ?? "No description available."
+          );
+          setTeacherName(data.teacher_name ?? "No teacher assigned yet.");
         } else {
-          console.error('Failed to fetch course data:', data.message);
+          console.error("Failed to fetch course data:", data.message);
         }
       } catch (error) {
-        console.error('Error fetching course data:', error);
+        console.error("Error fetching course data:", error);
       }
     };
     fetchCourseData();
@@ -84,16 +89,28 @@ const ManageCourse = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch("/api/ManageCourse");
+        const response = await fetch(`/api/ManageCourse?courseId=${courseId}`);
         const data = await response.json();
-        setStudents(data);
+        
+        if (!response.ok) {
+          console.error("Failed to fetch students:", data.message);
+          return;
+        }
+        
+        if (Array.isArray(data)) {
+          setStudents(data);
+        } else {
+          console.error("Fetched data is not an array:", data);
+          setStudents([]); // Set empty array in case of invalid data
+        }
       } catch (error) {
         console.error("Error fetching student data:", error);
+        setStudents([]); // Set empty array in case of error
       }
     };
 
     fetchStudents();
-  }, []);
+  }, [courseId]);
 
   // Theme detection based on user's device preference
   useEffect(() => {
@@ -145,7 +162,10 @@ const ManageCourse = () => {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+  const currentStudents = filteredStudents.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   // Calculate total pages
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
@@ -153,33 +173,35 @@ const ManageCourse = () => {
   // Handle saving edited course description
   const handleSaveCourseDescription = async () => {
     try {
-      const courseId = '123'; // Replace with actual course ID
-      const response = await fetch('/api/CourseData', {
-        method: 'PUT',
+      const courseId = "3137"; // Replace with actual course ID
+      const response = await fetch("/api/CourseDescription", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           id: courseId,
           description: editedDescription,
         }),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         setCourseDescription(editedDescription);
         setIsEditDescriptionModalOpen(false);
         setFeedbackMessage("Course description updated successfully!");
         setTimeout(() => setFeedbackMessage(""), 3000);
       } else {
-        console.error('Failed to update course description:', data.message);
+        console.error("Failed to update course description:", data.message);
         setFeedbackMessage("Failed to update course description.");
         setTimeout(() => setFeedbackMessage(""), 3000);
       }
     } catch (error) {
-      console.error('Error updating course description:', error);
-      setFeedbackMessage("An error occurred while updating the course description.");
+      console.error("Error updating course description:", error);
+      setFeedbackMessage(
+        "An error occurred while updating the course description."
+      );
       setTimeout(() => setFeedbackMessage(""), 3000);
     }
   };
@@ -246,7 +268,9 @@ const ManageCourse = () => {
 
       // Set error feedback message
       setFeedbackType("error");
-      setFeedbackMessage("An error occurred while updating student information.");
+      setFeedbackMessage(
+        "An error occurred while updating student information."
+      );
       setTimeout(() => setFeedbackMessage(""), 3000);
     }
   };
@@ -282,7 +306,9 @@ const ManageCourse = () => {
 
         // Set feedback message
         setFeedbackType("success");
-        setFeedbackMessage(`Student "${currentStudent.name}" deleted successfully!`);
+        setFeedbackMessage(
+          `Student "${currentStudent.name}" deleted successfully!`
+        );
         setTimeout(() => setFeedbackMessage(""), 3000);
       } else {
         console.error("Failed to delete student");
@@ -349,7 +375,11 @@ const ManageCourse = () => {
   }, [searchTerm]);
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
+    <div
+      className={`min-h-screen ${
+        theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
+      }`}
+    >
       {/* Feedback Message */}
       {feedbackMessage && (
         <div className="fixed top-4 right-4 z-50">
@@ -370,7 +400,7 @@ const ManageCourse = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-2xl font-bold mb-4">Course Description</h2>
           <p className="mb-4">
-            {courseDescription.split('\n').map((line, index) => (
+            {courseDescription.split("\n").map((line, index) => (
               <Fragment key={index}>
                 {line}
                 <br />
@@ -425,11 +455,14 @@ const ManageCourse = () => {
                     type="checkbox"
                     onChange={(e) =>
                       e.target.checked
-                        ? setSelectedRows(filteredStudents.map((student) => student.id))
+                        ? setSelectedRows(
+                            filteredStudents.map((student) => student.id)
+                          )
                         : setSelectedRows([])
                     }
                     checked={
-                      selectedRows.length === filteredStudents.length && filteredStudents.length > 0
+                      selectedRows.length === filteredStudents.length &&
+                      filteredStudents.length > 0
                     }
                   />
                 </th>
@@ -438,11 +471,15 @@ const ManageCourse = () => {
                   <th
                     key={header}
                     className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort(header.toLowerCase() as keyof Student)}
+                    onClick={() =>
+                      handleSort(header.toLowerCase() as keyof Student)
+                    }
                   >
                     {header}
                     {sortConfig.key === header.toLowerCase() && (
-                      <span>{sortConfig.direction === "ascending" ? " ▲" : " ▼"}</span>
+                      <span>
+                        {sortConfig.direction === "ascending" ? " ▲" : " ▼"}
+                      </span>
                     )}
                   </th>
                 ))}
@@ -457,7 +494,9 @@ const ManageCourse = () => {
                   <tr
                     key={student.id}
                     className={`${
-                      idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"
+                      idx % 2 === 0
+                        ? "bg-white dark:bg-gray-800"
+                        : "bg-gray-50 dark:bg-gray-700"
                     } hover:bg-gray-100 dark:hover:bg-gray-600`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -467,64 +506,87 @@ const ManageCourse = () => {
                         onChange={() => handleRowSelect(student.id)}
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{student.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{student.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{student.department}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{student.class}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {student.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {student.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {student.department}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {student.class}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Menu as="div" className="relative inline-block text-left">
-                      <Menu.Button className="inline-flex justify-center w-full text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900">
-                        <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
-                      </Menu.Button>
-                      <Transition
-                        as={Fragment}
-                        enter="transition ease-out duration-100"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95"
+                      <Menu
+                        as="div"
+                        className="relative inline-block text-left"
                       >
-                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-gray-800 bg-opacity-100 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                          <div className="py-1">
-                            <Menu.Item
-                              as="button"
-                              onClick={() => openEditModal(student)}
-                              className={({ active }) =>
-                                `${
-                                  active
-                                    ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    : "text-gray-700 dark:text-gray-200"
-                                } group flex items-center px-4 py-2 text-sm w-full`
-                              }
-                            >
-                              <PencilIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                              Edit
-                            </Menu.Item>
-                            <Menu.Item
-                              as="button"
-                              onClick={() => openDeleteModal(student)}
-                              className={({ active }) =>
-                                `${
-                                  active
-                                    ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    : "text-gray-700 dark:text-gray-200"
-                                } group flex items-center px-4 py-2 text-sm w-full`
-                              }
-                            >
-                              <TrashIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                              Delete
-                            </Menu.Item>
-                          </div>
-                        </Menu.Items>
-                      </Transition>
-                    </Menu>
-                  </td>
+                        <Menu.Button className="inline-flex justify-center w-full text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900">
+                          <ChevronDownIcon
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                          />
+                        </Menu.Button>
+                        <Transition
+                          as={Fragment}
+                          enter="transition ease-out duration-100"
+                          enterFrom="transform opacity-0 scale-95"
+                          enterTo="transform opacity-100 scale-100"
+                          leave="transition ease-in duration-75"
+                          leaveFrom="transform opacity-100 scale-100"
+                          leaveTo="transform opacity-0 scale-95"
+                        >
+                          <Menu.Items className="origin-top-right absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-gray-800 bg-opacity-100 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div className="py-1">
+                              <Menu.Item
+                                as="button"
+                                onClick={() => openEditModal(student)}
+                                className={({ active }) =>
+                                  `${
+                                    active
+                                      ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                      : "text-gray-700 dark:text-gray-200"
+                                  } group flex items-center px-4 py-2 text-sm w-full`
+                                }
+                              >
+                                <PencilIcon
+                                  className="h-5 w-5 mr-2"
+                                  aria-hidden="true"
+                                />
+                                Edit
+                              </Menu.Item>
+                              <Menu.Item
+                                as="button"
+                                onClick={() => openDeleteModal(student)}
+                                className={({ active }) =>
+                                  `${
+                                    active
+                                      ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                      : "text-gray-700 dark:text-gray-200"
+                                  } group flex items-center px-4 py-2 text-sm w-full`
+                                }
+                              >
+                                <TrashIcon
+                                  className="h-5 w-5 mr-2"
+                                  aria-hidden="true"
+                                />
+                                Delete
+                              </Menu.Item>
+                            </div>
+                          </Menu.Items>
+                        </Transition>
+                      </Menu>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-4 text-center text-sm text-gray-500"
+                  >
                     No students found.
                   </td>
                 </tr>
@@ -532,7 +594,7 @@ const ManageCourse = () => {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination Controls */}
         {filteredStudents.length > itemsPerPage && (
           <div className="flex justify-between items-center mt-4">
@@ -706,7 +768,11 @@ const ManageCourse = () => {
 
         {/* Edit Description Modal */}
         <Transition appear show={isEditDescriptionModalOpen} as={Fragment}>
-          <Dialog as="div" className="relative z-10" onClose={() => setIsEditDescriptionModalOpen(false)}>
+          <Dialog
+            as="div"
+            className="relative z-10"
+            onClose={() => setIsEditDescriptionModalOpen(false)}
+          >
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -731,7 +797,10 @@ const ManageCourse = () => {
                   leaveTo="opacity-0 scale-95"
                 >
                   <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                    <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                    <Dialog.Title
+                      as="h3"
+                      className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
+                    >
                       Edit Course Description
                     </Dialog.Title>
                     <div className="mt-4">
@@ -888,8 +957,8 @@ const ManageCourse = () => {
                         </Dialog.Title>
                         <div className="mt-2">
                           <p className="text-sm text-gray-500 dark:text-gray-300">
-                            Are you sure you want to delete the selected students? This
-                            action cannot be undone.
+                            Are you sure you want to delete the selected
+                            students? This action cannot be undone.
                           </p>
                         </div>
                       </div>
