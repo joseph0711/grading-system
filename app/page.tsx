@@ -71,7 +71,11 @@ export default function AuthPage() {
           role === "student" ? (
             <StudentHome onLogout={handleLogout} courseId={selectedCourse} />
           ) : role === "teacher" ? (
-            <TeacherHome onLogout={handleLogout} courseId={selectedCourse} />
+            <TeacherHome 
+              onLogout={handleLogout} 
+              courseId={selectedCourse}
+              onBackToSelectCourse={() => setSelectedCourse(null)}
+            />
           ) : (
             <div>Loading...</div>
           )
