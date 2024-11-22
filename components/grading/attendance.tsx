@@ -44,8 +44,9 @@ const Attendance: React.FC<AttendanceFromProps> = ({ courseId, onSuccess }) => {
             student_id: student.student_id,
             name: student.name,
             score:
-              student.score !== null && student.score !== undefined
-                ? Number(student.score)
+              student.attendance_score !== null &&
+              student.attendance_score !== undefined
+                ? Number(student.attendance_score)
                 : null,
             courseId: courseId,
           }));
