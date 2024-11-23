@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "../../../lib/db";
 import jwt from "jsonwebtoken";
 import { parse } from "cookie";
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
 
 export async function GET(request) {
   try {
@@ -31,7 +31,6 @@ export async function GET(request) {
 
     const account = decoded.account;
     const role = decoded.role;
-    console.log(account, role);
 
     if (!account || !role) {
       return NextResponse.json(
