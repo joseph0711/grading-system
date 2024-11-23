@@ -18,6 +18,10 @@ const TeacherHome = () => {
     router.push("/view-score");
   };
 
+  const handleCalculateClick = () => {
+    router.push("/calculate");
+  };
+
   const handleBackToSelectCourse = async () => {
     try {
       // Clear the course_id cookie when going back to course selection
@@ -123,6 +127,13 @@ const TeacherHome = () => {
                 icon: "📊",
                 onClick: handleViewScoreClick,
                 className: "bg-gradient-to-br from-yellow-500 to-yellow-600",
+              },
+              {
+                title: "Calculate",
+                description: "Calculate grades and statistics",
+                icon: "🧮",
+                onClick: handleCalculateClick,
+                className: "bg-gradient-to-br from-purple-500 to-purple-600",
               },
             ].map((item) => (
               <div
