@@ -121,7 +121,7 @@ const ManageCoursePage = () => {
       const fetchCourseData = async () => {
         try {
           const response = await fetch(
-            `/api/CourseDescription?courseId=${courseId}`
+            `/api/course-description?courseId=${courseId}`
           );
           const data = await response.json();
 
@@ -405,17 +405,7 @@ const ManageCoursePage = () => {
 
   // Create a function to handle the back navigation
   const handleBackNavigation = () => {
-    switch (userRole.toLowerCase()) {
-      case 'teacher':
-        router.push('/dashboard/teacher');
-        break;
-      case 'student':
-        router.push('/dashboard/student');
-        break;
-      default:
-        router.push('/dashboard');
-        break;
-    }
+    router.push("/dashboard/teacher");
   };
 
   return (
