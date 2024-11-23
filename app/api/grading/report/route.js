@@ -4,8 +4,7 @@ import pool from "../../../../lib/db";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const course_id = searchParams.get("course_id");
-
+    const course_id = searchParams.get("courseId");
     if (!course_id) {
       return NextResponse.json(
         { message: "Course ID is required" },
@@ -110,27 +109,43 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const course_id = searchParams.get("course_id");
-
+    const course_id = searchParams.get("courseId");
+    const teacher_id = searchParams.get("teacherId");
     const { groups } = await request.json();
-    const teacher_id = "T001";
 
-    const query = `
-      INSERT INTO grading.report_teacher_scores 
-        (teacher_id, course_id, group_id, score) 
-      VALUES 
-        ${groups.map(() => "(?, ?, ?, ?)").join(", ")}
-      ON DUPLICATE KEY UPDATE
-        score = VALUES(score)`;
+    if (!teacher_id || !course_id) {
+      return NextResponse.json(
+        { message: "Teacher ID and Course ID are required" },
+        { status: 400 }
+      );
+    }
 
-    const values = groups.flatMap((group) => [
-      teacher_id,
-      course_id,
-      group.groupId,
-      group.teacherScore,
-    ]);
+    // First, delete existing scores for this teacher and course
+    const deleteQuery = `
+      DELETE FROM grading.report_teacher_scores
+      WHERE teacher_id = ?
+      AND course_id = ?`;
 
-    await pool.query(query, values);
+    await pool.query(deleteQuery, [teacher_id, course_id]);
+
+    // Then, insert new scores
+    const insertValues = groups
+      .filter((group) => group.teacherScore !== null)
+      .map((group) => [
+        teacher_id,
+        course_id,
+        group.groupId,
+        group.teacherScore,
+      ]);
+
+    if (insertValues.length > 0) {
+      const insertQuery = `
+        INSERT INTO grading.report_teacher_scores 
+        (teacher_id, course_id, group_id, score)
+        VALUES ?`;
+
+      await pool.query(insertQuery, [insertValues]);
+    }
 
     return NextResponse.json(
       { message: "Teacher scores updated successfully" },
