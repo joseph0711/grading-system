@@ -16,6 +16,7 @@ export async function GET(request) {
         user: {
           account: decoded.account,
           role: decoded.role,
+          course_id: decoded.course_id,
         },
       });
     } catch (error) {
