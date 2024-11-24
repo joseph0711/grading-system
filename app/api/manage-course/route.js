@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "../../../lib/db";
 
-// Fetch all student information
+// Fetch all student information and departments
 export async function GET(request) {
   try {
     const courseId = request.nextUrl.searchParams.get("courseId");
@@ -13,7 +13,8 @@ export async function GET(request) {
       );
     }
 
-    const [rows] = await pool.query(
+    // Fetch students
+    const [studentRows] = await pool.query(
       `SELECT s.student_id AS id, s.name, d.department_name AS department, s.class
       FROM grading.student_enrolled_info sei
       JOIN grading.student s ON sei.student_id = s.student_id 
@@ -23,13 +24,19 @@ export async function GET(request) {
       [courseId]
     );
 
-    if (rows.length === 0) {
-      return NextResponse.json([], { status: 200 });
-    }
+    // Fetch departments
+    const [departmentRows] = await pool.query(
+      `SELECT department_id, department_name 
+       FROM grading.department 
+       ORDER BY department_name`
+    );
 
-    return NextResponse.json(rows);
+    return NextResponse.json({
+      students: studentRows,
+      departments: departmentRows,
+    });
   } catch (error) {
-    console.error("Error fetching student data:", error);
+    console.error("Error fetching data:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
@@ -39,57 +46,46 @@ export async function PUT(request) {
   try {
     const { id, department, class: className, name } = await request.json();
 
-    const [existingStudentRows] = await pool.query(
-      "SELECT department, `class`, name FROM grading.student WHERE student_id = ?",
-      [id]
+    // First get the department_id from department name
+    const [departmentRows] = await pool.query(
+      "SELECT department_id FROM grading.department WHERE department_name = ?",
+      [department]
     );
 
-    if (existingStudentRows.length === 0) {
-      console.error("Student not found for ID:", id);
+    if (departmentRows.length === 0) {
       return NextResponse.json(
-        { message: "Student not found" },
+        { message: "Department not found" },
         { status: 404 }
       );
     }
 
-    const existingStudent = existingStudentRows[0];
+    const departmentId = departmentRows[0].department_id;
 
-    // Use existing values for any fields not provided in the request
-    const updatedDepartment =
-      department !== undefined ? department : existingStudent.department;
-    const updatedClassName =
-      className !== undefined ? className : existingStudent.class;
-    const updatedName = name !== undefined ? name : existingStudent.name;
-
-    console.log("Updating student with values:", {
-      updatedDepartment,
-      updatedClassName,
-      updatedName,
-    });
-
-    // Update query
+    // Update the student information
     const query = `
       UPDATE grading.student 
-      SET department = ?, \`class\` = ?, name = ? 
+      SET department_id = ?, 
+          class = ?, 
+          name = ? 
       WHERE student_id = ?
     `;
 
-    // Execute the update query
     const [result] = await pool.query(query, [
-      updatedDepartment,
-      updatedClassName,
-      updatedName,
+      departmentId,
+      className,
+      name,
       id,
     ]);
-    console.log("Update result:", result);
 
-    // Check if the student info was successfully updated
     if (result.affectedRows > 0) {
       return NextResponse.json({
         message: "Student info updated successfully",
       });
     } else {
-      return NextResponse.json({ message: "No changes made" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Student not found" },
+        { status: 404 }
+      );
     }
   } catch (error) {
     console.error("Error updating student data:", error);
@@ -103,7 +99,7 @@ export async function PUT(request) {
 // Delete student information
 export async function DELETE(request) {
   try {
-    const { ids } = await request.json(); // Expecting an array of student IDs
+    const { ids } = await request.json();
 
     if (!ids || ids.length === 0) {
       return NextResponse.json(
@@ -112,26 +108,101 @@ export async function DELETE(request) {
       );
     }
 
-    // Delete query for bulk deletion
+    // Start a transaction
+    await pool.query("START TRANSACTION");
+
+    try {
+      // Delete from score first (if exists)
+      await pool.query(`DELETE FROM grading.score WHERE student_id IN (?)`, [
+        ids,
+      ]);
+
+      await pool.query(
+        `DELETE FROM grading.report_peer_scores WHERE student_id IN (?)`,
+        [ids]
+      );
+
+      // Delete from group table
+      await pool.query(`DELETE FROM grading.group WHERE student_id IN (?)`, [
+        ids,
+      ]);
+
+      // Delete from student_enrolled_info
+      await pool.query(
+        `DELETE FROM grading.student_enrolled_info WHERE student_id IN (?)`,
+        [ids]
+      );
+
+      // Finally delete from student table
+      const [result] = await pool.query(
+        `DELETE FROM grading.student WHERE student_id IN (?)`,
+        [ids]
+      );
+
+      // If we got here, commit the transaction
+      await pool.query("COMMIT");
+
+      if (result.affectedRows > 0) {
+        return NextResponse.json({
+          message: `${result.affectedRows} students deleted successfully`,
+        });
+      } else {
+        return NextResponse.json(
+          { message: "No students deleted" },
+          { status: 404 }
+        );
+      }
+    } catch (error) {
+      // If any error occurs, rollback the transaction
+      await pool.query("ROLLBACK");
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error deleting student(s):", error);
+    return NextResponse.json(
+      {
+        message:
+          "Failed to delete student(s). They might be part of existing groups or have associated scores.",
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Add this new PATCH method for updating course description
+export async function PATCH(request) {
+  try {
+    const { courseId, description } = await request.json();
+
+    if (!courseId) {
+      return NextResponse.json(
+        { message: "No course ID provided" },
+        { status: 400 }
+      );
+    }
+
+    // Update the course description
     const query = `
-      DELETE FROM grading.student 
-      WHERE user_id IN (?)
+      UPDATE grading.course 
+      SET course_description = ?
+      WHERE course_id = ?
     `;
 
-    const [result] = await pool.query(query, [ids]);
+    const [result] = await pool.query(query, [description, courseId]);
 
     if (result.affectedRows > 0) {
       return NextResponse.json({
-        message: `${result.affectedRows} students deleted successfully`,
+        message: "Course description updated successfully",
       });
     } else {
       return NextResponse.json(
-        { message: "No students deleted" },
+        { message: "Course not found" },
         { status: 404 }
       );
     }
   } catch (error) {
-    console.error("Error deleting student(s):", error);
+    console.error("Error updating course description:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
       { status: 500 }
