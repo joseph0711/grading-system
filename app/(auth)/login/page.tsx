@@ -6,44 +6,24 @@ interface LoginProps {
   onLogin: (
     account: string,
     password: string,
-    rememberMe: boolean,
-    role: string
-  ) => void;
+    rememberMe: boolean
+  ) => Promise<void>;
+  loginStatus: {
+    message: string;
+    type: "error" | "warning" | "info" | null;
+    attemptsLeft?: number;
+    remainingTime?: number;
+  };
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ account, password, rememberMe }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const sessionResponse = await fetch("/api/session");
-        if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
-          onLogin(account, password, rememberMe, sessionData.user.role);
-        } else {
-          setErrorMessage("Session retrieval failed.");
-        }
-      } else {
-        setErrorMessage("Invalid account or password");
-      }
-    } catch (error) {
-      setErrorMessage("Login failed. Please try again later.");
-    }
+    await onLogin(account, password, rememberMe);
   };
 
   return (
@@ -61,22 +41,29 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         {/* Login Form Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl backdrop-blur-sm backdrop-filter p-8 border border-gray-200 dark:border-gray-700">
-          {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 rounded-r-lg">
-              <p className="text-red-600 dark:text-red-400 text-sm flex items-center">
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {errorMessage}
-              </p>
+          {/* Login Status Message */}
+          {loginStatus.message && (
+            <div
+              className={`mb-6 p-4 rounded-md ${
+                loginStatus.type === "error"
+                  ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                  : loginStatus.type === "warning"
+                  ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                  : "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+              }`}
+            >
+              <p>{loginStatus.message}</p>
+              {loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0 && (
+                <p className="mt-2 text-sm">
+                  Warning: Your account will be locked for 10 minutes after{" "}
+                  {loginStatus.attemptsLeft} more failed attempts.
+                </p>
+              )}
+              {loginStatus.remainingTime && (
+                <p className="mt-2 text-sm">
+                  Time remaining: {loginStatus.remainingTime} minutes
+                </p>
+              )}
             </div>
           )}
 
