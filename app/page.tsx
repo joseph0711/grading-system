@@ -60,5 +60,5 @@ export default function LoginPage() {
     }
   };
 
-  return <Login onLogin={handleLogin} loginStatus={loginStatus} />;
+  return <Login onLogin={handleLogin} loginStatus={loginStatus} isLoading={isLoading} />;
 }
