@@ -3,16 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-interface StudentGradingSelectionProps {
-  courseId: string;
-}
-
-const StudentGradingSelection: React.FC<StudentGradingSelectionProps> = ({
-  courseId,
-}) => {
+const StudentGradingPage = () => {
   const router = useRouter();
-  const [showPeerReport, setShowPeerReport] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [courseId, setCourseId] = useState<string>("");
 
   useEffect(() => {
     const fetchSessionData = async () => {
@@ -23,6 +17,7 @@ const StudentGradingSelection: React.FC<StudentGradingSelectionProps> = ({
         if (response.ok && data.authenticated) {
           if (data.user && data.user.role) {
             setUserRole(data.user.role);
+            setCourseId(data.user.course_id);
           } else {
             console.error("No user role found in session");
             router.push("/select-course");
@@ -40,22 +35,32 @@ const StudentGradingSelection: React.FC<StudentGradingSelectionProps> = ({
     fetchSessionData();
   }, [router]);
 
-  const handleBackNavigation = () => {
+  const handleBackToDashboard = () => {
     router.push("/dashboard/student");
   };
 
-  const handleButtonClick = (category: string) => {
-    if (category === "Peer Grading of Group Report") {
-      setShowPeerReport(true);
-    }
+  const handlePeerReportClick = () => {
+    router.push(`/grading/peer-report`);
   };
 
+  const gradingOptions = [
+    {
+      id: "PeerGrading",
+      title: "Peer Grading of Group Report",
+      description: "Grade and provide feedback for your peers' group reports",
+      icon: "📊",
+      color: "from-blue-500 to-blue-600",
+      onClick: handlePeerReportClick,
+    },
+    // Add more options here if needed
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center">
           <button
-            onClick={handleBackNavigation}
+            onClick={handleBackToDashboard}
             className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             <svg
@@ -73,60 +78,49 @@ const StudentGradingSelection: React.FC<StudentGradingSelectionProps> = ({
             </svg>
             <span>Back to Dashboard</span>
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Student Grading
-          </h1>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          {showPeerReport ? (
-            <PeerScoresForm
-              courseId={courseId}
-              onSuccess={() => console.log("Success")}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {["Peer Grading of Group Report"].map((category) => (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              Student Grading Dashboard
+            </h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Select a category to start grading
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {gradingOptions.map((option) => (
+              <div
+                key={option.id}
+                onClick={option.onClick}
+                className="group relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+              >
                 <div
-                  key={category}
-                  onClick={() => handleButtonClick(category)}
-                  className="group relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-                >
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <svg
-                        className="w-12 h-12 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                      {category}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      Grade and provide feedback for your peers' group reports
-                    </p>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+                  className={`absolute inset-0 bg-gradient-to-br ${option.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                />
+                <div className="p-6">
+                  <div className="text-4xl mb-4">{option.icon}</div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    {option.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">
+                    {option.description}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+                <div
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${option.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default StudentGradingSelection;
+export default StudentGradingPage;

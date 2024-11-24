@@ -35,6 +35,7 @@ const ReportPage = () => {
   const router = useRouter();
   const [courseId, setCourseId] = useState<string>("");
   const [teacherId, setTeacherId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Session handling
   useEffect(() => {
@@ -91,6 +92,8 @@ const ReportPage = () => {
         } catch (error) {
           console.error("Error fetching group data:", error);
           setGroups([]);
+        } finally {
+          setIsLoading(false);
         }
       };
       fetchGroups();
@@ -110,28 +113,31 @@ const ReportPage = () => {
   // Handle submit
   const handleSubmit = async () => {
     try {
-      const response = await fetch(`/api/grading/report?courseId=${courseId}&teacherId=${teacherId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ groups }),
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/grading/report?courseId=${courseId}&teacherId=${teacherId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ groups }),
+          credentials: "include",
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
-        setFeedbackMessage('Scores submitted successfully');
-        setFeedbackType('success');
+        setFeedbackMessage("Scores submitted successfully");
+        setFeedbackType("success");
       } else {
-        setFeedbackMessage(data.message || 'Failed to submit scores');
-        setFeedbackType('error');
+        setFeedbackMessage(data.message || "Failed to submit scores");
+        setFeedbackType("error");
       }
     } catch (error) {
-      console.error('Error submitting scores:', error);
-      setFeedbackMessage('An error occurred while submitting scores');
-      setFeedbackType('error');
+      console.error("Error submitting scores:", error);
+      setFeedbackMessage("An error occurred while submitting scores");
+      setFeedbackType("error");
     }
     setIsConfirmModalOpen(false);
   };
@@ -165,6 +171,29 @@ const ReportPage = () => {
       )
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <div className="h-16 w-16">
+                <div className="absolute h-16 w-16 rounded-full border-4 border-t-blue-500 border-b-blue-700 border-l-blue-600 border-r-blue-600 animate-spin"></div>
+                <div className="absolute h-16 w-16 rounded-full border-4 border-blue-500 opacity-20"></div>
+              </div>
+            </div>
+            <div className="text-gray-600 dark:text-gray-300 text-lg font-medium">
+              Loading report data...
+            </div>
+            <div className="text-gray-400 dark:text-gray-500 text-sm">
+              Please wait while we fetch the group information
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
@@ -529,7 +558,8 @@ const ReportPage = () => {
                   </Dialog.Title>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Are you sure you want to submit these scores? This action cannot be undone.
+                      Are you sure you want to submit these scores? This action
+                      cannot be undone.
                     </p>
                   </div>
 
