@@ -7,6 +7,12 @@ import Login from "./(auth)/login/page";
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [loginStatus, setLoginStatus] = useState<{
+    message: string;
+    type: "error" | "warning" | "info" | null;
+    attemptsLeft?: number;
+    remainingTime?: number;
+  }>({ message: "", type: null });
 
   const handleLogin = async (
     account: string,
@@ -21,20 +27,38 @@ export default function LoginPage() {
         body: JSON.stringify({ account, password, rememberMe }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        // After successful login, navigate to select-course page
         router.push("/select-course");
+      } else if (res.status === 423) {
+        setLoginStatus({
+          message: `Account is locked. Please try again in ${data.remainingTime} minutes.`,
+          type: "error",
+          remainingTime: data.remainingTime,
+        });
+      } else if (res.status === 401) {
+        setLoginStatus({
+          message: `Invalid credentials. ${data.attemptsLeft} attempts remaining before account lockout.`,
+          type: "warning",
+          attemptsLeft: data.attemptsLeft,
+        });
       } else {
-        const data = await res.json();
-        alert(data.message || "Login failed!");
+        setLoginStatus({
+          message: data.message || "Login failed!",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Login error:", error);
-      alert("An error occurred during login");
+      setLoginStatus({
+        message: "An error occurred during login",
+        type: "error",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  return <Login onLogin={handleLogin} />;
+  return <Login onLogin={handleLogin} loginStatus={loginStatus} />;
 }
