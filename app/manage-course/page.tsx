@@ -4,9 +4,11 @@ import React, { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { useSettings } from "../contexts/SettingsContext";
 
 const ManageCoursePage = () => {
   const router = useRouter();
+  const { t } = useSettings();
   const [courseId, setCourseId] = useState<string>("");
   const [userRole, setUserRole] = useState<string>("");
 
@@ -97,7 +99,7 @@ const ManageCoursePage = () => {
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [editedStudent, setEditedStudent] = useState<Student | null>(null);
   const [selectedRows, setSelectedRows] = useState<number[]>([]); // For storing selected rows
-  const [theme, setTheme] = useState("light");
+
   const [sortConfig, setSortConfig] = useState<{
     key: keyof (typeof students)[0] | null;
     direction: "ascending" | "descending" | null;
@@ -138,22 +140,6 @@ const ManageCoursePage = () => {
       fetchCourseData();
     }
   }, [courseId]);
-
-  // Theme detection based on user's device preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    setTheme(mediaQuery.matches ? "dark" : "light");
-
-    const handleThemeChange = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? "dark" : "light");
-    };
-
-    mediaQuery.addEventListener("change", handleThemeChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleThemeChange);
-    };
-  }, []);
 
   // Handle sorting
   const handleSort = (key: keyof (typeof students)[0]) => {
@@ -429,7 +415,7 @@ const ManageCoursePage = () => {
             <span>Back to Dashboard</span>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Manage Course
+            {t.manageCourse}
           </h1>
         </div>
       </header>
@@ -534,19 +520,19 @@ const ManageCoursePage = () => {
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Student ID
+                    {t.studentId}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Name
+                    {t.name}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Department
+                    {t.department}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Class
+                    {t.class}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
+                    {t.actions}
                   </th>
                 </tr>
               </thead>
