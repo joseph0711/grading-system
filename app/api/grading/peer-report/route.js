@@ -38,8 +38,8 @@ export async function GET(request) {
       );
     }
 
-    // Fetch the user's group
-    const query = `
+    // Query for the report view
+    const reportQuery = `
       WITH UserGroup AS (
         SELECT group_id
         FROM grading.group
@@ -47,8 +47,7 @@ export async function GET(request) {
       )
       SELECT DISTINCT 
         g.group_id as scored_group_id,
-        ps.score_value,
-        ug.group_id as user_group_id
+        ps.score_value
       FROM grading.group g
       CROSS JOIN UserGroup ug
       LEFT JOIN grading.report_peer_scores ps ON 
@@ -57,19 +56,24 @@ export async function GET(request) {
           ps.course_id = ?
       WHERE g.course_id = ?
         AND g.group_id != ug.group_id
-      ORDER BY g.group_id
-    `;
-    console.log("courseId:", courseId);
-    const [rows] = await pool.query(query, [studentId, courseId, studentId, courseId, courseId]);
+      ORDER BY g.group_id`;
 
-    const peerScores = rows.map((row) => ({
-      scoredGroupId: row.scored_group_id,
+    // Process the results
+    const [rows] = await pool.query(reportQuery, [
+      studentId,
+      courseId,
+      studentId,
+      courseId,
+      courseId,
+    ]);
+
+    // Transform the data for the frontend
+    const groupScores = rows.map((row) => ({
+      groupId: row.scored_group_id,
       scoreValue: row.score_value || "",
     }));
 
-    const userGroupId = rows.length > 0 ? rows[0].user_group_id : null;
-
-    return NextResponse.json({ peerScores, userGroupId }, { status: 200 });
+    return NextResponse.json({ groupScores }, { status: 200 });
   } catch (error) {
     console.error("Error fetching groups:", error);
     return NextResponse.json(
@@ -81,9 +85,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Parse cookies and verify token
     const cookies = parse(request.headers.get("cookie") || "");
     const token = cookies.sessionToken;
+    const { searchParams } = new URL(request.url);
+    const courseId = searchParams.get("courseId");
 
     if (!token) {
       return NextResponse.json(
@@ -92,6 +97,7 @@ export async function POST(request) {
       );
     }
 
+    // Verify token
     const secretKey = process.env.JWT_SECRET_KEY;
     let decoded;
     try {
@@ -104,39 +110,35 @@ export async function POST(request) {
     }
 
     const studentId = decoded.account;
-    const { peerScores } = await request.json();
-    console.log("Peer scores:", peerScores);
+    const body = await request.json();
+    const { peerScores } = body;
 
-    if (!peerScores || peerScores.length === 0) {
+    if (!peerScores || !Array.isArray(peerScores) || peerScores.length === 0) {
       return NextResponse.json(
-        { message: "No peer scores provided" },
+        { message: "No valid peer scores provided" },
         { status: 400 }
       );
     }
 
-    const scoreRegex = /^(100|[1-9]?[0-9])$/;
+    // Prepare values for insertion
+    const values = peerScores.map((score) => [
+      studentId, // student_id (varchar(10))
+      courseId, // course_id (varchar(10))
+      score.scoredGroupId, // scored_group_id (int)
+      score.scoreValue, // score_value (int)
+    ]);
 
-    for (const score of peerScores) {
-      if (!scoreRegex.test(score.scoreValue)) {
-        return NextResponse.json(
-          {
-            message: `Invalid score value: ${score.scoreValue}. Must be between 0 and 100.`,
-          },
-          { status: 400 }
-        );
-      }
-    }
+    const insertQuery = `
+      INSERT INTO grading.report_peer_scores 
+        (student_id, course_id, scored_group_id, score_value)
+      VALUES
+        ?
+      ON DUPLICATE KEY UPDATE
+        score_value = VALUES(score_value)
+    `;
 
-    const query = peerScores
-      .map(
-        (score) =>
-          `UPDATE grading.peer_scores SET score_value = ${score.scoreValue} WHERE course_id = '${score.courseId}' AND scorer_group_id = '${score.scorerGroupId}' AND scored_group_id = '${score.scoredGroupId}' AND student_id = '${studentId}'`
-      )
-      .join("; ");
+    await pool.query(insertQuery, [values]);
 
-    console.log("Executing query:", query);
-
-    const [result] = await pool.query(query);
     return NextResponse.json(
       { message: "Peer scores submitted successfully" },
       { status: 200 }
