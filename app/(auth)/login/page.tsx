@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useSettings } from "../../contexts/SettingsContext";
+import { translations } from "../../translations";
+import SettingsButtons from "../../components/SettingsButtons";
 
 interface LoginProps {
   onLogin: (
@@ -14,9 +17,13 @@ interface LoginProps {
     attemptsLeft?: number;
     remainingTime?: number;
   };
+  isLoading: boolean;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
+  const { language } = useSettings();
+  const t = translations[language];
+
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -29,14 +36,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <div className="fixed top-4 right-4">
+          <SettingsButtons />
+        </div>
+
         {/* Logo/Brand Section */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 text-transparent bg-clip-text mb-2">
-            Welcome Back
+            {t.welcome}
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Sign in to continue to your dashboard
-          </p>
+          <p className="text-gray-600 dark:text-gray-300">{t.signInToSystem}</p>
         </div>
 
         {/* Login Form Card */}
@@ -70,12 +79,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Account
+                {t.account}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="h-5 w-5 text-gray-400"
+                    className={`h-5 w-5 ${
+                      isLoading
+                        ? "text-gray-300 dark:text-gray-500"
+                        : "text-gray-400"
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -92,7 +105,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
                   type="text"
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors"
+                  disabled={isLoading}
+                  className={`block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 
+                    rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                    focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors
+                    ${
+                      isLoading
+                        ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
+                        : ""
+                    }`}
                   required
                   placeholder="Enter your account"
                 />
@@ -101,12 +122,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Password
+                {t.password}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="h-5 w-5 text-gray-400"
+                    className={`h-5 w-5 ${
+                      isLoading
+                        ? "text-gray-300 dark:text-gray-500"
+                        : "text-gray-400"
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -123,7 +148,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors"
+                  disabled={isLoading}
+                  className={`block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 
+                    rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                    focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors
+                    ${
+                      isLoading
+                        ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
+                        : ""
+                    }`}
                   required
                   placeholder="Enter your password"
                 />
@@ -136,40 +169,61 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus }) => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-700 dark:border-gray-600"
+                  disabled={isLoading}
+                  className={`w-4 h-4 text-blue-600 border-gray-300 rounded 
+                    focus:ring-blue-500 dark:focus:ring-blue-400 
+                    dark:bg-gray-700 dark:border-gray-600
+                    ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}
                 />
-                <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
-                  Remember me
+                <span
+                  className={`ml-2 text-sm text-gray-600 dark:text-gray-300 
+                  ${isLoading ? "opacity-50" : ""}`}
+                >
+                  {t.rememberMe}
                 </span>
               </label>
-              <button
-                type="button"
-                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
-              >
-                Forgot password?
-              </button>
             </div>
 
             <button
               type="submit"
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-[1.02]"
+              disabled={isLoading}
+              className={`w-full flex justify-center py-2.5 px-4 border border-transparent 
+                rounded-lg shadow-sm text-sm font-medium text-white 
+                bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
+                transition-all duration-300 transform hover:scale-[1.02]
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                ${isLoading ? "cursor-not-allowed" : "cursor-pointer"}`}
             >
-              Sign in
+              {isLoading ? (
+                <div className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  {t.signingIn}
+                </div>
+              ) : (
+                t.signIn
+              )}
             </button>
           </form>
-        </div>
-
-        {/* Footer Links */}
-        <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600 dark:text-gray-400">
-            Need help? Contact{" "}
-            <a
-              href="#"
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              support
-            </a>
-          </span>
         </div>
       </div>
     </div>
