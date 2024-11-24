@@ -131,7 +131,7 @@ const TeacherHome = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col items-center space-y-8">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-            {loading ? t.loading : `${t.welcome}, ${userName}`}
+            {loading ? t.loading : `${t.welcome} ${userName}`}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
             {[

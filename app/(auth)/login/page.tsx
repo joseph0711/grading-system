@@ -64,13 +64,18 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
               <p>{loginStatus.message}</p>
               {loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0 && (
                 <p className="mt-2 text-sm">
-                  Warning: Your account will be locked for 10 minutes after{" "}
-                  {loginStatus.attemptsLeft} more failed attempts.
+                  {t.loginWarningAttempts.replace(
+                    "{attempts}",
+                    loginStatus.attemptsLeft.toString()
+                  )}
                 </p>
               )}
               {loginStatus.remainingTime && (
                 <p className="mt-2 text-sm">
-                  Time remaining: {loginStatus.remainingTime} minutes
+                  {t.loginTimeRemaining.replace(
+                    "{minutes}",
+                    loginStatus.remainingTime.toString()
+                  )}
                 </p>
               )}
             </div>
@@ -108,14 +113,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
                   disabled={isLoading}
                   className={`block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 
                     rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                    focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors
+                    focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm transition-colors
                     ${
                       isLoading
                         ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                        : ""
+                        : "bg-white"
                     }`}
                   required
-                  placeholder="Enter your account"
+                  placeholder={t.enterAccount}
                 />
               </div>
             </div>
@@ -151,14 +156,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
                   disabled={isLoading}
                   className={`block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 
                     rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                    focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors
+                    focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm transition-colors
                     ${
                       isLoading
                         ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                        : ""
+                        : "bg-white"
                     }`}
                   required
-                  placeholder="Enter your password"
+                  placeholder={t.enterPassword}
                 />
               </div>
             </div>

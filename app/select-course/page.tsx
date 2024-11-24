@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSettings } from "../contexts/SettingsContext";
 
 interface Course {
   course_id: string;
@@ -16,6 +17,7 @@ interface SelectCourseProps {
 
 const SelectCourse: React.FC<SelectCourseProps> = () => {
   const router = useRouter();
+  const { t } = useSettings();
   const [courses, setCourses] = useState<Course[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,10 +92,10 @@ const SelectCourse: React.FC<SelectCourseProps> = () => {
               </div>
             </div>
             <div className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-              Loading courses...
+              {t.loadingCourses}
             </div>
             <div className="text-gray-400 dark:text-gray-500 text-sm">
-              Please wait while we fetch your courses
+              {t.pleaseWaitCourses}
             </div>
           </div>
         </div>
@@ -106,7 +108,7 @@ const SelectCourse: React.FC<SelectCourseProps> = () => {
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 text-transparent bg-clip-text">
-            My Courses
+            {t.myCourses}
           </h1>
           <button
             onClick={handleLogout}
@@ -125,7 +127,7 @@ const SelectCourse: React.FC<SelectCourseProps> = () => {
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
               />
             </svg>
-            <span>Logout</span>
+            <span>{t.logout}</span>
           </button>
         </div>
       </header>
@@ -189,7 +191,7 @@ const SelectCourse: React.FC<SelectCourseProps> = () => {
                   onClick={() => handleEnterCourse(course.course_id)}
                   className="w-full flex items-center justify-center space-x-2 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg transition-all duration-300 transform group-hover:scale-[1.02]"
                 >
-                  <span>Enter Course</span>
+                  <span>{t.enterCourse}</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -223,8 +225,8 @@ const SelectCourse: React.FC<SelectCourseProps> = () => {
                   d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01"
                 />
               </svg>
-              <p className="text-lg font-medium">No courses found</p>
-              <p className="text-sm">Check back later for available courses</p>
+              <p className="text-lg font-medium">{t.noCoursesFound}</p>
+              <p className="text-sm">{t.checkBackLater}</p>
             </div>
           )}
         </div>

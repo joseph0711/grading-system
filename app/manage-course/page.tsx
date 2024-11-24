@@ -412,7 +412,7 @@ const ManageCoursePage = () => {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            <span>Back to Dashboard</span>
+            <span>{t.backToDashboard}</span>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {t.manageCourse}
@@ -439,20 +439,20 @@ const ManageCoursePage = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Course Information
+                {t.courseDetails}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Teacher: {teacherName}
+                {t.teacher}: {teacherName || t.noTeacherAssigned}
               </p>
             </div>
             <button
               onClick={() => {
-                setEditedDescription(courseDescription); // Set initial value when opening modal
+                setEditedDescription(courseDescription);
                 setIsEditDescriptionModalOpen(true);
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              Edit Description
+              {t.editCourseInfo}
             </button>
           </div>
           <p className="text-gray-700 dark:text-gray-300">
@@ -467,10 +467,12 @@ const ManageCoursePage = () => {
             <div className="relative w-full sm:w-64">
               <input
                 type="text"
-                placeholder="Search students..."
+                placeholder={t.searchStudent}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 
+                  bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 
+                  focus:ring-2 focus:ring-blue-500"
               />
               <span className="absolute left-3 top-2.5 text-gray-400">
                 <svg
@@ -600,10 +602,12 @@ const ManageCoursePage = () => {
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
               >
-                Previous
+                {t.previous}
               </button>
               <span className="text-sm text-gray-600 dark:text-gray-300">
-                Page {currentPage} of {totalPages}
+                {t.pageOf
+                  .replace("{current}", currentPage.toString())
+                  .replace("{total}", totalPages.toString())}
               </span>
               <button
                 onClick={() =>
@@ -612,7 +616,7 @@ const ManageCoursePage = () => {
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
               >
-                Next
+                {t.next}
               </button>
             </div>
           </div>
@@ -658,14 +662,16 @@ const ManageCoursePage = () => {
                     as="h3"
                     className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
                   >
-                    Edit Course Description
+                    {t.courseDescription}
                   </Dialog.Title>
                   <div className="mt-4">
                     <textarea
-                      className="w-full h-32 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full h-32 p-2 border rounded-md border-gray-300 dark:border-gray-600 
+                        bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+                        focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={editedDescription}
                       onChange={(e) => setEditedDescription(e.target.value)}
-                      placeholder="Enter course description..."
+                      placeholder={t.noCourseDescription}
                     />
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
@@ -677,14 +683,14 @@ const ManageCoursePage = () => {
                       }}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                     <button
-                      type="button" // Add type="button" to prevent form submission
+                      type="button"
                       onClick={handleSaveCourseDescription}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
-                      Save
+                      {t.save}
                     </button>
                   </div>
                 </Dialog.Panel>
@@ -730,13 +736,31 @@ const ManageCoursePage = () => {
                     as="h3"
                     className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
                   >
-                    Edit Student Information
+                    {t.editStudent}
                   </Dialog.Title>
                   {editedStudent && (
                     <div className="mt-4 space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Name
+                          {t.studentId}
+                        </label>
+                        <input
+                          type="text"
+                          value={editedStudent.id}
+                          onChange={(e) =>
+                            setEditedStudent({
+                              ...editedStudent,
+                              id: parseInt(e.target.value),
+                            })
+                          }
+                          className="mt-1 w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+                            focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {t.name}
                         </label>
                         <input
                           type="text"
@@ -747,12 +771,14 @@ const ManageCoursePage = () => {
                               name: e.target.value,
                             })
                           }
-                          className="mt-1 w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="mt-1 w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+                            focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Department
+                          {t.department}
                         </label>
                         <select
                           value={editedStudent.department}
@@ -762,7 +788,9 @@ const ManageCoursePage = () => {
                               department: e.target.value,
                             })
                           }
-                          className="mt-1 w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="mt-1 w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+                            focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           {departments.map((dept) => (
                             <option
@@ -776,7 +804,7 @@ const ManageCoursePage = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Class
+                          {t.class}
                         </label>
                         <input
                           type="text"
@@ -787,7 +815,9 @@ const ManageCoursePage = () => {
                               class: e.target.value,
                             })
                           }
-                          className="mt-1 w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="mt-1 w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
+                            focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -797,13 +827,13 @@ const ManageCoursePage = () => {
                       onClick={() => setIsEditModalOpen(false)}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                     <button
                       onClick={handleSaveStudent}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                     >
-                      Save
+                      {t.save}
                     </button>
                   </div>
                 </Dialog.Panel>
@@ -849,12 +879,11 @@ const ManageCoursePage = () => {
                     as="h3"
                     className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
                   >
-                    Confirm Deletion
+                    {t.confirmDelete}
                   </Dialog.Title>
                   <div className="mt-4">
                     <p className="text-gray-700 dark:text-gray-300">
-                      Are you sure you want to delete this student? This action
-                      cannot be undone.
+                      {t.confirmDeleteDesc}
                     </p>
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
@@ -862,13 +891,13 @@ const ManageCoursePage = () => {
                       onClick={() => setIsDeleteModalOpen(false)}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                     <button
                       onClick={handleDeleteStudent}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                     >
-                      Delete
+                      {t.delete}
                     </button>
                   </div>
                 </Dialog.Panel>
@@ -914,12 +943,11 @@ const ManageCoursePage = () => {
                     as="h3"
                     className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
                   >
-                    Confirm Bulk Deletion
+                    {t.confirmBulkDelete}
                   </Dialog.Title>
                   <div className="mt-4">
                     <p className="text-gray-700 dark:text-gray-300">
-                      Are you sure you want to delete {selectedRows.length}{" "}
-                      selected students? This action cannot be undone.
+                      {t.confirmBulkDeleteDesc}
                     </p>
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
@@ -927,13 +955,13 @@ const ManageCoursePage = () => {
                       onClick={() => setIsBulkDeleteDialogOpen(false)}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                     <button
                       onClick={handleBulkDelete}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                     >
-                      Delete All Selected
+                      {t.deleteAllSelected}
                     </button>
                   </div>
                 </Dialog.Panel>

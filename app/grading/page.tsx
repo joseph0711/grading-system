@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { translations } from "../translations";
+import { useSettings } from "../contexts/SettingsContext";
 
 const GradingPage = () => {
+  const { t } = useSettings();
   const router = useRouter();
   const [courseId, setCourseId] = useState<string>("");
 
@@ -60,42 +63,42 @@ const GradingPage = () => {
   const gradingOptions = [
     {
       id: "Attendance",
-      title: "Attendance",
-      description: "Manage and grade student attendance records",
+      title: t.attendanceGradingTitle,
+      description: t.attendanceGradingDesc,
       icon: "👥",
       color: "from-blue-500 to-blue-600",
       onClick: handleAttendanceClick,
     },
     {
       id: "Participation",
-      title: "Participation",
-      description: "Track and grade student participation",
+      title: t.participationGradingTitle,
+      description: t.participationGradingDesc,
       icon: "🗣️",
       color: "from-green-500 to-green-600",
       onClick: handleParticipationClick,
     },
     {
       id: "Midterm",
-      title: "Midterm",
-      description: "Grade midterm examinations",
+      title: t.midtermGradingTitle,
+      description: t.midtermGradingDesc,
       icon: "📝",
       color: "from-yellow-500 to-yellow-600",
       onClick: handleMidtermClick,
     },
     {
       id: "Final",
-      title: "Final",
-      description: "Grade final examinations",
-      icon: "📊",
-      color: "from-purple-500 to-purple-600",
+      title: t.finalGradingTitle,
+      description: t.finalGradingDesc,
+      icon: "🎓",
+      color: "from-red-500 to-red-600",
       onClick: handleFinalClick,
     },
     {
       id: "Group Report",
-      title: "Group Report",
-      description: "Evaluate group project reports",
+      title: t.reportGradingTitle,
+      description: t.reportGradingDesc,
       icon: "📑",
-      color: "from-red-500 to-red-600",
+      color: "from-purple-500 to-purple-600",
       onClick: handleGroupReportClick,
     },
   ];
@@ -121,7 +124,7 @@ const GradingPage = () => {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            <span>Back to Dashboard</span>
+            <span>{t.backToDashboard}</span>
           </button>
         </div>
       </header>
@@ -130,10 +133,10 @@ const GradingPage = () => {
         <div className="space-y-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Grading Dashboard
+              {t.gradingDashboard}
             </h2>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Select a category to start grading
+              {t.selectCategoryToGrade}
             </p>
           </div>
 

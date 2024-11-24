@@ -130,27 +130,27 @@ const StudentHome = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col items-center space-y-8">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-            {loading ? t.loading : `${t.welcome}, ${userName}`}
+            {loading ? t.loading : `${t.welcome} ${userName}`}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
             {[
               {
-                title: "Grading",
-                description: "Grade assignments and peer reviews",
+                title: t.grading,
+                description: t.gradeAndPeerReview,
                 icon: "📝",
                 onClick: handleGradingClick,
                 className: "bg-gradient-to-br from-blue-500 to-blue-600",
               },
               {
-                title: "Course Info",
-                description: "View course details and materials",
+                title: t.courseInfo,
+                description: t.viewCourseDetails,
                 icon: "📚",
                 onClick: handleCourseInfoClick,
                 className: "bg-gradient-to-br from-green-500 to-green-600",
               },
               {
-                title: "View Score",
-                description: "Check your grades and feedback",
+                title: t.viewScore,
+                description: t.checkGradesAndFeedback,
                 icon: "📊",
                 onClick: handleViewScoreClick,
                 className: "bg-gradient-to-br from-yellow-500 to-yellow-600",

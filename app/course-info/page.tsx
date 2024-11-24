@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSettings } from "../contexts/SettingsContext";
 
 interface CourseInfo {
   course_name: string;
@@ -18,6 +19,7 @@ interface GradingCriteria {
 }
 
 export default function CourseInfo() {
+  const { t } = useSettings();
   const router = useRouter();
   const [courseId, setCourseId] = useState<string>("");
   const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
@@ -111,7 +113,7 @@ export default function CourseInfo() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
-          <div className="text-red-500 text-xl mb-4">Error</div>
+          <div className="text-red-500 text-xl mb-4">{t.error}</div>
           <div className="text-gray-600 dark:text-gray-300">{error}</div>
         </div>
       </div>
@@ -130,10 +132,10 @@ export default function CourseInfo() {
               </div>
             </div>
             <div className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-              Loading course information...
+              {t.loadingCourseInfo}
             </div>
             <div className="text-gray-400 dark:text-gray-500 text-sm">
-              Please wait while we fetch your course details
+              {t.pleaseWaitCourseDetails}
             </div>
           </div>
         </div>
@@ -164,10 +166,10 @@ export default function CourseInfo() {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            <span>Back to Dashboard</span>
+            <span>{t.backToDashboard}</span>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Course Information
+            {t.courseInfo}
           </h1>
         </div>
       </header>
@@ -177,12 +179,12 @@ export default function CourseInfo() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Course Details
+              {t.courseDetails}
             </h2>
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                  Course Name
+                  {t.courseName}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   {courseInfo.course_name}
@@ -190,18 +192,18 @@ export default function CourseInfo() {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                  Teacher
+                  {t.teacher}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {courseInfo.teacher_name}
+                  {courseInfo.teacher_name || t.noTeacherAssigned}
                 </p>
               </div>
               <div>
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                  Course Description
+                  {t.courseDescription}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {courseInfo.course_description}
+                  {courseInfo.course_description || t.noCourseDescription}
                 </p>
               </div>
             </div>
@@ -211,12 +213,12 @@ export default function CourseInfo() {
         {/* Grading Criteria Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Grading Criteria
+            {t.gradingCriteria}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Midterm Examination
+                {t.midtermExamination}
               </h3>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {gradingCriteria.midterm_criteria}%
@@ -224,7 +226,7 @@ export default function CourseInfo() {
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Final Examination
+                {t.finalExamination}
               </h3>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {gradingCriteria.final_criteria}%
@@ -232,7 +234,7 @@ export default function CourseInfo() {
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Report
+                {t.report}
               </h3>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {gradingCriteria.report_criteria}%
@@ -240,7 +242,7 @@ export default function CourseInfo() {
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Attendance
+                {t.attendance}
               </h3>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {gradingCriteria.attendance_criteria}%
@@ -248,7 +250,7 @@ export default function CourseInfo() {
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Participation
+                {t.participation}
               </h3>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {gradingCriteria.participation_criteria}%
