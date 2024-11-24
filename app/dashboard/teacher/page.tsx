@@ -154,7 +154,7 @@ const TeacherHome = () => {
       <footer className="fixed bottom-0 left-0 right-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            © 2024 Teacher Portal
+            © 2024 Joseph Chiang, 張祐維
           </span>
           <button className="inline-flex items-center space-x-2 py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105">
             <svg
@@ -176,7 +176,7 @@ const TeacherHome = () => {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            <span>Logout</span>
+            <span>Settings</span>
           </button>
         </div>
       </footer>
