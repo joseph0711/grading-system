@@ -1,13 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, Fragment } from "react";
-import { Dialog, Menu, Transition } from "@headlessui/react";
-import {
-  ExclamationTriangleIcon,
-  TrashIcon,
-  PencilIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+import { Dialog, Transition } from "@headlessui/react";
+import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 
 const ManageCoursePage = () => {
@@ -46,7 +41,7 @@ const ManageCoursePage = () => {
   // Modify the existing fetchStudents to use courseId
   useEffect(() => {
     if (courseId) {
-      const fetchStudents = async () => {
+      const fetchData = async () => {
         try {
           const response = await fetch(
             `/api/manage-course?courseId=${courseId}`
@@ -54,18 +49,20 @@ const ManageCoursePage = () => {
           const data = await response.json();
 
           if (!response.ok) {
-            console.error("Failed to fetch students:", data.message);
+            console.error("Failed to fetch data:", data.message);
             return;
           }
 
-          setStudents(data);
+          setStudents(data.students);
+          setDepartments(data.departments);
         } catch (error) {
-          console.error("Error fetching student data:", error);
+          console.error("Error fetching data:", error);
           setStudents([]);
+          setDepartments([]);
         }
       };
 
-      fetchStudents();
+      fetchData();
     }
   }, [courseId]);
 
@@ -200,16 +197,143 @@ const ManageCoursePage = () => {
   // Calculate total pages
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
 
-  // Handle saving edited course description
-  const handleSaveCourseDescription = async () => {
+  // Handle saving edited student info
+  const handleSaveStudent = async () => {
+    if (!editedStudent) return;
+    setLoading(true);
+
     try {
-      const response = await fetch("/api/CourseDescription", {
+      const response = await fetch("/api/manage-course", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: courseId,
+          id: editedStudent.id,
+          name: editedStudent.name,
+          department: editedStudent.department,
+          class: editedStudent.class,
+        }),
+      });
+
+      if (response.ok) {
+        setStudents((prevStudents) =>
+          prevStudents.map((student) =>
+            student.id === editedStudent.id ? editedStudent : student
+          )
+        );
+        setIsEditModalOpen(false);
+        setFeedbackType("success");
+        setFeedbackMessage("Student information updated successfully!");
+      } else {
+        const error = await response.json();
+        setFeedbackType("error");
+        setFeedbackMessage(
+          error.message || "Failed to update student information."
+        );
+      }
+    } catch (error) {
+      console.error("Error during update:", error);
+      setFeedbackType("error");
+      setFeedbackMessage(
+        "An error occurred while updating student information."
+      );
+    } finally {
+      setLoading(false);
+      setTimeout(() => setFeedbackMessage(""), 3000); // Clear message after 3 seconds
+    }
+  };
+
+  // Handle deleting a single student
+  const handleDeleteStudent = async () => {
+    if (!currentStudent) return;
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/manage-course", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: [currentStudent.id] }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStudents((prevStudents) =>
+          prevStudents.filter((student) => student.id !== currentStudent.id)
+        );
+        setFeedbackType("success");
+        setFeedbackMessage(
+          `Student "${currentStudent.name}" deleted successfully!`
+        );
+      } else {
+        setFeedbackType("error");
+        setFeedbackMessage(data.message || "Failed to delete student.");
+      }
+    } catch (error) {
+      console.error("Error during deletion:", error);
+      setFeedbackType("error");
+      setFeedbackMessage("An error occurred while deleting the student.");
+    } finally {
+      setIsDeleteModalOpen(false); // Always close the modal
+      setLoading(false);
+      setTimeout(() => setFeedbackMessage(""), 5000); // Show message for 5 seconds
+    }
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/manage-course", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedRows }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStudents((prevStudents) =>
+          prevStudents.filter((student) => !selectedRows.includes(student.id))
+        );
+        setSelectedRows([]);
+        setFeedbackType("success");
+        setFeedbackMessage("Selected students deleted successfully!");
+      } else {
+        setFeedbackType("error");
+        setFeedbackMessage(
+          data.message || "Failed to delete selected students."
+        );
+      }
+    } catch (error) {
+      console.error("Error during bulk deletion:", error);
+      setFeedbackType("error");
+      setFeedbackMessage("An error occurred while deleting selected students.");
+    } finally {
+      setIsBulkDeleteDialogOpen(false); // Always close the modal
+      setLoading(false);
+      setTimeout(() => setFeedbackMessage(""), 5000); // Show message for 5 seconds
+    }
+  };
+
+  // Handle saving course description
+  const handleSaveCourseDescription = async () => {
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/manage-course", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          courseId: courseId,
           description: editedDescription,
         }),
       });
@@ -219,18 +343,22 @@ const ManageCoursePage = () => {
       if (response.ok) {
         setCourseDescription(editedDescription);
         setIsEditDescriptionModalOpen(false);
+        setFeedbackType("success");
         setFeedbackMessage("Course description updated successfully!");
-        setTimeout(() => setFeedbackMessage(""), 3000);
       } else {
-        console.error("Failed to update course description:", data.message);
-        setFeedbackMessage("Failed to update course description.");
-        setTimeout(() => setFeedbackMessage(""), 3000);
+        setFeedbackType("error");
+        setFeedbackMessage(
+          data.message || "Failed to update course description."
+        );
       }
     } catch (error) {
       console.error("Error updating course description:", error);
+      setFeedbackType("error");
       setFeedbackMessage(
         "An error occurred while updating the course description."
       );
+    } finally {
+      setLoading(false);
       setTimeout(() => setFeedbackMessage(""), 3000);
     }
   };
@@ -253,148 +381,12 @@ const ManageCoursePage = () => {
     setIsBulkDeleteDialogOpen(true);
   };
 
-  // Handle saving edited student info and sending it to the backend
-  const handleSaveStudent = async () => {
-    const studentData = JSON.stringify(editedStudent);
-    console.warn("Sending JSON data:", studentData);
-    try {
-      const response = await fetch("/api/ManageCourse", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: studentData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Update successful:", result);
-
-        // Update the student list locally to reflect the changes
-        if (editedStudent) {
-          setStudents((prevStudents) =>
-            prevStudents.map((student) =>
-              student.id === editedStudent.id ? editedStudent : student
-            )
-          );
-        }
-        setIsEditModalOpen(false); // Close the dialog on successful update
-
-        // Set feedback message
-        setFeedbackType("success");
-        setFeedbackMessage("Student information updated successfully!");
-        setTimeout(() => setFeedbackMessage(""), 3000);
-      } else {
-        console.error("Failed to update student info");
-
-        // Set error feedback message
-        setFeedbackType("error");
-        setFeedbackMessage("Failed to update student information.");
-        setTimeout(() => setFeedbackMessage(""), 3000);
-      }
-    } catch (error) {
-      console.error("Error during update:", error);
-
-      // Set error feedback message
-      setFeedbackType("error");
-      setFeedbackMessage(
-        "An error occurred while updating student information."
-      );
-      setTimeout(() => setFeedbackMessage(""), 3000);
-    }
-  };
-
   // Handle checkbox toggle for selecting rows
   const handleRowSelect = (studentId: number) => {
     if (selectedRows.includes(studentId)) {
       setSelectedRows(selectedRows.filter((id) => id !== studentId));
     } else {
       setSelectedRows([...selectedRows, studentId]);
-    }
-  };
-
-  // Handle deleting a single student
-  const handleDeleteStudent = async () => {
-    if (!currentStudent) return;
-
-    try {
-      const response = await fetch("/api/ManageCourse", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ids: [currentStudent.id] }),
-      });
-
-      if (response.ok) {
-        console.log("Student deleted:", currentStudent);
-        setStudents((prevStudents) =>
-          prevStudents.filter((student) => student.id !== currentStudent.id)
-        );
-        setIsDeleteModalOpen(false);
-
-        // Set feedback message
-        setFeedbackType("success");
-        setFeedbackMessage(
-          `Student "${currentStudent.name}" deleted successfully!`
-        );
-        setTimeout(() => setFeedbackMessage(""), 3000);
-      } else {
-        console.error("Failed to delete student");
-
-        // Set error feedback message
-        setFeedbackType("error");
-        setFeedbackMessage("Failed to delete student.");
-        setTimeout(() => setFeedbackMessage(""), 3000);
-      }
-    } catch (error) {
-      console.error("Error during deletion:", error);
-
-      // Set error feedback message
-      setFeedbackType("error");
-      setFeedbackMessage("An error occurred while deleting the student.");
-      setTimeout(() => setFeedbackMessage(""), 3000);
-    }
-  };
-
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
-    try {
-      const response = await fetch("/api/ManageCourse", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ids: selectedRows }),
-      });
-
-      if (response.ok) {
-        console.log("Students deleted:", selectedRows);
-        setStudents((prevStudents) =>
-          prevStudents.filter((student) => !selectedRows.includes(student.id))
-        );
-        setSelectedRows([]);
-        setIsBulkDeleteDialogOpen(false);
-
-        // Set feedback message
-        setFeedbackType("success");
-        setFeedbackMessage("Selected students deleted successfully!");
-        setTimeout(() => setFeedbackMessage(""), 3000);
-      } else {
-        console.error("Failed to delete students");
-
-        // Set error feedback message
-        setFeedbackType("error");
-        setFeedbackMessage("Failed to delete selected students.");
-        setTimeout(() => setFeedbackMessage(""), 3000);
-      }
-    } catch (error) {
-      console.error("Error during bulk deletion:", error);
-
-      // Set error feedback message
-      setFeedbackType("error");
-      setFeedbackMessage("An error occurred while deleting selected students.");
-      setTimeout(() => setFeedbackMessage(""), 3000);
     }
   };
 
@@ -407,6 +399,11 @@ const ManageCoursePage = () => {
   const handleBackNavigation = () => {
     router.push("/dashboard/teacher");
   };
+
+  // Add new state for departments
+  const [departments, setDepartments] = useState<
+    { department_id: number; department_name: string }[]
+  >([]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
@@ -438,6 +435,19 @@ const ManageCoursePage = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Feedback Message */}
+        {feedbackMessage && (
+          <div
+            className={`mb-6 p-4 rounded-md ${
+              feedbackType === "success"
+                ? "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-300"
+                : "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300"
+            }`}
+          >
+            {feedbackMessage}
+          </div>
+        )}
+
         {/* Course Info Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
@@ -633,8 +643,9 @@ const ManageCoursePage = () => {
             setIsEditDescriptionModalOpen(false);
           }}
         >
-          <Transition.Child
+          <Transition
             as={Fragment}
+            show={isEditDescriptionModalOpen}
             enter="ease-out duration-300"
             enterFrom="opacity-0 backdrop-blur-none"
             enterTo="opacity-100 backdrop-blur-md"
@@ -642,8 +653,8 @@ const ManageCoursePage = () => {
             leaveFrom="opacity-100 backdrop-blur-md"
             leaveTo="opacity-0 backdrop-blur-none"
           >
-            <div className="fixed inset-0 bg-black/40 transition-all" />
-          </Transition.Child>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-md transition-all duration-300" />
+          </Transition>
 
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
@@ -704,8 +715,9 @@ const ManageCoursePage = () => {
           className="relative z-10"
           onClose={() => setIsEditModalOpen(false)}
         >
-          <Transition.Child
+          <Transition
             as={Fragment}
+            show={isEditModalOpen}
             enter="ease-out duration-300"
             enterFrom="opacity-0 backdrop-blur-none"
             enterTo="opacity-100 backdrop-blur-md"
@@ -713,8 +725,8 @@ const ManageCoursePage = () => {
             leaveFrom="opacity-100 backdrop-blur-md"
             leaveTo="opacity-0 backdrop-blur-none"
           >
-            <div className="fixed inset-0 bg-black/40 transition-all" />
-          </Transition.Child>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-md transition-all duration-300" />
+          </Transition>
 
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
@@ -756,8 +768,7 @@ const ManageCoursePage = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           Department
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={editedStudent.department}
                           onChange={(e) =>
                             setEditedStudent({
@@ -766,7 +777,16 @@ const ManageCoursePage = () => {
                             })
                           }
                           className="mt-1 w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        />
+                        >
+                          {departments.map((dept) => (
+                            <option
+                              key={dept.department_id}
+                              value={dept.department_name}
+                            >
+                              {dept.department_name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -814,8 +834,9 @@ const ManageCoursePage = () => {
           className="relative z-10"
           onClose={() => setIsDeleteModalOpen(false)}
         >
-          <Transition.Child
+          <Transition
             as={Fragment}
+            show={isDeleteModalOpen}
             enter="ease-out duration-300"
             enterFrom="opacity-0 backdrop-blur-none"
             enterTo="opacity-100 backdrop-blur-md"
@@ -823,8 +844,8 @@ const ManageCoursePage = () => {
             leaveFrom="opacity-100 backdrop-blur-md"
             leaveTo="opacity-0 backdrop-blur-none"
           >
-            <div className="fixed inset-0 bg-black/40 transition-all" />
-          </Transition.Child>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-md transition-all duration-300" />
+          </Transition>
 
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
@@ -878,8 +899,9 @@ const ManageCoursePage = () => {
           className="relative z-10"
           onClose={() => setIsBulkDeleteDialogOpen(false)}
         >
-          <Transition.Child
+          <Transition
             as={Fragment}
+            show={isBulkDeleteDialogOpen}
             enter="ease-out duration-300"
             enterFrom="opacity-0 backdrop-blur-none"
             enterTo="opacity-100 backdrop-blur-md"
@@ -887,8 +909,8 @@ const ManageCoursePage = () => {
             leaveFrom="opacity-100 backdrop-blur-md"
             leaveTo="opacity-0 backdrop-blur-none"
           >
-            <div className="fixed inset-0 bg-black/40 transition-all" />
-          </Transition.Child>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-md transition-all duration-300" />
+          </Transition>
 
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
