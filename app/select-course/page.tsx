@@ -14,13 +14,11 @@ interface SelectCourseProps {
   onLogout: () => void;
 }
 
-const SelectCourse: React.FC<SelectCourseProps> = ({
-  onCourseSelect,
-  onLogout,
-}) => {
+const SelectCourse: React.FC<SelectCourseProps> = () => {
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +36,8 @@ const SelectCourse: React.FC<SelectCourseProps> = ({
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -77,6 +77,29 @@ const SelectCourse: React.FC<SelectCourseProps> = ({
       console.error("Logout error:", error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <div className="h-16 w-16">
+                <div className="absolute h-16 w-16 rounded-full border-4 border-t-blue-500 border-b-blue-700 border-l-blue-600 border-r-blue-600 animate-spin"></div>
+                <div className="absolute h-16 w-16 rounded-full border-4 border-blue-500 opacity-20"></div>
+              </div>
+            </div>
+            <div className="text-gray-600 dark:text-gray-300 text-lg font-medium">
+              Loading courses...
+            </div>
+            <div className="text-gray-400 dark:text-gray-500 text-sm">
+              Please wait while we fetch your courses
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
@@ -197,7 +220,7 @@ const SelectCourse: React.FC<SelectCourseProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01"
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01"
                 />
               </svg>
               <p className="text-lg font-medium">No courses found</p>
