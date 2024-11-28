@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { translations } from "../translations";
 
 type Theme = "light" | "dark";
@@ -22,40 +28,62 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [language, setLanguage] = useState<Language>("en");
   const [mounted, setMounted] = useState(false);
+  const [hasUserSetTheme, setHasUserSetTheme] = useState(false);
 
   // Handle initial theme and language
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as Theme | null;
     const savedLanguage = localStorage.getItem("language") as Language | null;
+    const hasUserThemePreference =
+      localStorage.getItem("hasUserSetTheme") === "true";
 
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-      .matches
-      ? "dark"
-      : "light";
+    if (typeof window !== "undefined") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
 
-    const initialTheme = savedTheme || systemTheme;
-    const initialLanguage = savedLanguage || "en";
+      if (hasUserThemePreference && savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        setTheme(systemTheme);
+      }
 
-    setTheme(initialTheme);
-    setLanguage(initialLanguage);
-
-    document.documentElement.classList.remove("dark", "light");
-    document.documentElement.classList.add(initialTheme);
-
-    setMounted(true);
+      setLanguage(savedLanguage || "en");
+      setHasUserSetTheme(hasUserThemePreference);
+      setMounted(true);
+    }
   }, []);
 
-  const toggleTheme = () => {
+  // Apply theme effect
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.classList.remove("dark", "light");
+      document.documentElement.classList.add(theme);
+    }
+  }, [theme, mounted]);
+
+  // System theme change listener
+  useEffect(() => {
+    if (mounted && !hasUserSetTheme && typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+        setTheme(e.matches ? "dark" : "light");
+      };
+
+      mediaQuery.addEventListener("change", handleSystemThemeChange);
+      return () =>
+        mediaQuery.removeEventListener("change", handleSystemThemeChange);
+    }
+  }, [mounted, hasUserSetTheme]);
+
+  const toggleTheme = useCallback(() => {
     const newTheme = theme === "light" ? "dark" : "light";
-    document.documentElement.classList.add("transitioning");
     setTheme(newTheme);
-    document.documentElement.classList.remove(theme);
-    document.documentElement.classList.add(newTheme);
+    setHasUserSetTheme(true);
     localStorage.setItem("theme", newTheme);
-    setTimeout(() => {
-      document.documentElement.classList.remove("transitioning");
-    }, 200);
-  };
+    localStorage.setItem("hasUserSetTheme", "true");
+  }, [theme]);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
@@ -71,7 +99,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         language,
         toggleTheme,
         setLanguage: handleSetLanguage,
-        t: translations[language] as typeof translations['en'],
+        t: translations[language] as (typeof translations)["en"],
       }}
     >
       {children}
