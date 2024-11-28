@@ -35,14 +35,14 @@ export async function POST(request) {
 
     if (!students || students.length === 0) {
       return NextResponse.json(
-        { message: "No student scores provided" },
+        { message: "No midterm scores provided" },
         { status: 400 }
       );
     }
 
-    const scoreRegex = /^(100|[1-9]?[0-9])$/;
+    const scoreRegex = /^([1-9]?[0-9])$/;
     for (const student of students) {
-      if (!scoreRegex.test(student.score)) {
+      if (student.score !== null && !scoreRegex.test(student.score)) {
         return NextResponse.json(
           {
             message: `Invalid score for student ${student.student_id}. Score must be a number between 0 and 100.`,
@@ -55,10 +55,15 @@ export async function POST(request) {
     const query = students
       .map(
         (student) =>
-          `UPDATE grading.score SET midterm_score = ${student.score} WHERE student_id = '${student.student_id}' AND course_id = '${courseId}'`
+          `UPDATE grading.score SET midterm_score = ${
+            student.score === null ? "NULL" : student.score
+          } WHERE student_id = '${
+            student.student_id
+          }' AND course_id = '${courseId}'`
       )
       .join("; ");
-    const [result] = await pool.query(query);
+
+    await pool.query(query);
 
     return NextResponse.json(
       { message: "Midterm scores updated successfully" },

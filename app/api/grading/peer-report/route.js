@@ -113,20 +113,42 @@ export async function POST(request) {
     const body = await request.json();
     const { peerScores } = body;
 
-    if (!peerScores || !Array.isArray(peerScores) || peerScores.length === 0) {
+    // Enhanced validation
+    if (!peerScores || !Array.isArray(peerScores)) {
       return NextResponse.json(
         { message: "No valid peer scores provided" },
         { status: 400 }
       );
     }
 
-    // Prepare values for insertion
-    const values = peerScores.map((score) => [
-      studentId, // student_id (varchar(10))
-      courseId, // course_id (varchar(10))
-      score.scoredGroupId, // scored_group_id (int)
-      score.scoreValue, // score_value (int)
+    // Validate each score object
+    const validScores = peerScores.filter(
+      (score) =>
+        score.scoredGroupId &&
+        (typeof score.scoreValue === "number" || score.scoreValue === null)
+    );
+
+    if (validScores.length === 0) {
+      return NextResponse.json(
+        { message: "No valid scores to save" },
+        { status: 400 }
+      );
+    }
+
+    // Prepare values for insertion, filtering out any empty scores
+    const values = validScores.map((score) => [
+      studentId,
+      courseId,
+      score.scoredGroupId,
+      score.scoreValue,
     ]);
+
+    if (values.length === 0) {
+      return NextResponse.json(
+        { message: "No scores to update" },
+        { status: 200 }
+      );
+    }
 
     const insertQuery = `
       INSERT INTO grading.report_peer_scores 

@@ -120,15 +120,24 @@ export async function POST(request) {
       );
     }
 
-    // First, delete existing scores for this teacher and course
-    const deleteQuery = `
-      DELETE FROM grading.report_teacher_scores
-      WHERE teacher_id = ?
-      AND course_id = ?`;
+    // Validate scores
+    for (const group of groups) {
+      if (
+        group.teacherScore !== null &&
+        (isNaN(group.teacherScore) ||
+          group.teacherScore < 0 ||
+          group.teacherScore > 100)
+      ) {
+        return NextResponse.json(
+          {
+            message: `Invalid score for group ${group.groupId}. Score must be a number between 0 and 100.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
-    await pool.query(deleteQuery, [teacher_id, course_id]);
-
-    // Then, insert new scores
+    // Handle single score update (auto-save) or multiple scores (submit)
     const insertValues = groups
       .filter((group) => group.teacherScore !== null)
       .map((group) => [
@@ -139,6 +148,17 @@ export async function POST(request) {
       ]);
 
     if (insertValues.length > 0) {
+      // Delete existing scores for these groups
+      const groupIds = groups.map((g) => g.groupId);
+      const deleteQuery = `
+        DELETE FROM grading.report_teacher_scores
+        WHERE teacher_id = ?
+        AND course_id = ?
+        AND group_id IN (?)`;
+
+      await pool.query(deleteQuery, [teacher_id, course_id, groupIds]);
+
+      // Insert new scores
       const insertQuery = `
         INSERT INTO grading.report_teacher_scores 
         (teacher_id, course_id, group_id, score)
