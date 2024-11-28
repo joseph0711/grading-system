@@ -10,7 +10,8 @@ export async function GET(request) {
       SELECT 
         sc.student_id,
         s.name,
-        sc.attendance_score
+        sc.absence_times,
+        GREATEST(0, 100 - (sc.absence_times * 5)) as attendance_score
       FROM 
         grading.score sc
       JOIN 
@@ -40,17 +41,17 @@ export async function POST(request) {
 
     if (!students || students.length === 0) {
       return NextResponse.json(
-        { message: "No student scores provided" },
+        { message: "No student absences provided" },
         { status: 400 }
       );
     }
 
-    const scoreRegex = /^(100|[1-9]?[0-9])$/;
+    const absenceRegex = /^[0-9]+$/;
     for (const student of students) {
-      if (!scoreRegex.test(student.score)) {
+      if (!absenceRegex.test(student.absences)) {
         return NextResponse.json(
           {
-            message: `Invalid score for student ${student.student_id}. Score must be a number between 0 and 100.`,
+            message: `Invalid absence count for student ${student.student_id}. Absences must be a non-negative integer.`,
           },
           { status: 400 }
         );
@@ -60,17 +61,17 @@ export async function POST(request) {
     const query = students
       .map(
         (student) =>
-          `UPDATE grading.score SET attendance_score = ${student.score} WHERE student_id = '${student.student_id}' AND course_id = '${courseId}'`
+          `UPDATE grading.score SET absence_times = ${student.absences} WHERE student_id = '${student.student_id}' AND course_id = '${courseId}'`
       )
       .join("; ");
     const [result] = await pool.query(query);
 
     return NextResponse.json(
-      { message: "Attendance scores updated successfully" },
+      { message: "Absence times updated successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error updating attendance scores:", error);
+    console.error("Error updating absence times:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
       { status: 500 }
