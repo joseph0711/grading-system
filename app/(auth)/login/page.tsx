@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useSettings } from "../../contexts/SettingsContext";
-import { translations } from "../../translations";
+import { useState, useEffect } from "react";
+import { useSettings } from "@/app/contexts/SettingsContext";
 import SettingsButtons from "../../components/SettingsButtons";
+import { toast, Toaster } from "react-hot-toast";
 
 interface LoginProps {
   onLogin: (
@@ -21,12 +21,74 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
-  const { language } = useSettings();
-  const t = translations[language];
+  const { t } = useSettings();
 
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    if (loginStatus.message) {
+      toast.dismiss();
+      const toastId = "login-status-toast";
+
+      switch (loginStatus.type) {
+        case "error":
+          toast.error(
+            loginStatus.message.includes("Account is locked")
+              ? t.accountLocked.replace(
+                  "{minutes}",
+                  Math.ceil(loginStatus.remainingTime!).toString()
+                )
+              : loginStatus.message,
+            {
+              id: toastId,
+              duration: 4000,
+            }
+          );
+          break;
+        case "warning":
+          toast.custom(
+            <div className="bg-yellow-50 text-yellow-700 p-4 rounded-lg shadow-md flex items-start">
+              <svg
+                className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                {loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0 && (
+                  <p className="text-sm mt-1">
+                    {t.loginWarningAttempts
+                      .replace(
+                        "{attempts}",
+                        loginStatus.attemptsLeft.toString()
+                      )
+                      .replace(
+                        "{minutes}",
+                        loginStatus.remainingTime
+                          ? Math.ceil(loginStatus.remainingTime / 60).toString()
+                          : ""
+                      )}
+                  </p>
+                )}
+              </div>
+            </div>,
+            { id: toastId }
+          );
+          break;
+        case "info":
+          toast(loginStatus.message, { id: toastId });
+          break;
+      }
+    }
+  }, [loginStatus, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +97,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <Toaster position="top-center" />
+
       <div className="w-full max-w-md">
         <div className="fixed top-4 right-4">
           <SettingsButtons />
@@ -50,37 +114,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
 
         {/* Login Form Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl backdrop-blur-sm backdrop-filter p-8 border border-gray-200 dark:border-gray-700">
-          {/* Login Status Message */}
-          {loginStatus.message && (
-            <div
-              className={`mb-6 p-4 rounded-md ${
-                loginStatus.type === "error"
-                  ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                  : loginStatus.type === "warning"
-                  ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  : "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-              }`}
-            >
-              <p>{loginStatus.message}</p>
-              {loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0 && (
-                <p className="mt-2 text-sm">
-                  {t.loginWarningAttempts.replace(
-                    "{attempts}",
-                    loginStatus.attemptsLeft.toString()
-                  )}
-                </p>
-              )}
-              {loginStatus.remainingTime && (
-                <p className="mt-2 text-sm">
-                  {t.loginTimeRemaining.replace(
-                    "{minutes}",
-                    loginStatus.remainingTime.toString()
-                  )}
-                </p>
-              )}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
