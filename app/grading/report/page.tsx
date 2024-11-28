@@ -3,6 +3,10 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { useRouter } from "next/navigation";
+import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
+import { useAutoSave } from "@/app/hooks/useAutoSave";
+import { Toaster, toast } from "react-hot-toast";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 interface Student {
   studentId: string;
@@ -49,15 +53,12 @@ const ReportPage = () => {
             setCourseId(data.user.course_id);
             setTeacherId(data.user.account);
           } else {
-            console.error("No course ID found in session");
             router.push("/select-course");
           }
         } else {
-          console.error("Invalid session response:", data);
           router.push("/select-course");
         }
       } catch (error) {
-        console.error("Error fetching session data:", error);
         router.push("/select-course");
       }
     };
@@ -67,13 +68,65 @@ const ReportPage = () => {
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [feedbackType, setFeedbackType] = useState("success");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [itemsPerPage, setItemsPerPage] = useState(6);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalData, setModalData] = useState<Group[]>([]);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const { t } = useSettings();
+
+  // Add a function to fetch and update groups data
+  const fetchAndUpdateGroups = async () => {
+    try {
+      const response = await fetch(`/api/grading/report?courseId=${courseId}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setGroups(data.groups || []);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      setGroups([]);
+    }
+  };
+
+  // Update toast messages with translations
+  const { handleAutoSave, isSaving } = useAutoSave({
+    onSave: async (value: any) => {
+      return toast.promise(
+        fetch(
+          `/api/grading/report?courseId=${courseId}&teacherId=${teacherId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              groups: [
+                {
+                  groupId: value.groupId,
+                  teacherScore: value.score,
+                },
+              ],
+            }),
+          }
+        ).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(t.saveFailed);
+          }
+          await fetchAndUpdateGroups();
+          return response.json();
+        }),
+        {
+          loading: t.loading,
+          success: t.saveSuccess,
+          error: t.saveFailed,
+        }
+      );
+    },
+  });
 
   // Fetch groups
   useEffect(() => {
@@ -110,38 +163,6 @@ const ReportPage = () => {
     }
   };
 
-  // Handle submit
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch(
-        `/api/grading/report?courseId=${courseId}&teacherId=${teacherId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ groups }),
-          credentials: "include",
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setFeedbackMessage("Scores submitted successfully");
-        setFeedbackType("success");
-      } else {
-        setFeedbackMessage(data.message || "Failed to submit scores");
-        setFeedbackType("error");
-      }
-    } catch (error) {
-      console.error("Error submitting scores:", error);
-      setFeedbackMessage("An error occurred while submitting scores");
-      setFeedbackType("error");
-    }
-    setIsConfirmModalOpen(false);
-  };
-
   // Filter and pagination logic
   const filteredGroups =
     groups?.filter((group) => {
@@ -160,17 +181,64 @@ const ReportPage = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentGroups = filteredGroups.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Handle teacher score change
+  // Update handleTeacherScoreChange to handle immediate UI updates
   const handleTeacherScoreChange = (groupId: string, value: string) => {
-    if (!groups) return;
+    const score = value === "" ? null : Number(value);
+
+    if (score !== null && (isNaN(score) || score < 0 || score > 100)) {
+      toast.error(t.scoreMustBeBetween0And100);
+      return;
+    }
+
+    // Update local state immediately
     setGroups((prevGroups) =>
       prevGroups.map((group) =>
         group.groupId === groupId
-          ? { ...group, teacherScore: value !== "" ? Number(value) : null }
+          ? {
+              ...group,
+              teacherScore: score,
+              // Recalculate total average score
+              totalAverageScore:
+                score !== null && group.groupAverageScore !== null
+                  ? (score + group.groupAverageScore) / 2
+                  : null,
+            }
           : group
       )
     );
+
+    // Trigger auto-save and data refresh
+    if (score === null || (score >= 0 && score <= 100)) {
+      handleAutoSave({
+        groupId: groupId,
+        score: score,
+      });
+    }
   };
+
+  // LoadingSpinner component
+  const LoadingSpinner = () => (
+    <svg
+      className="animate-spin h-4 w-4 text-current inline ml-2"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  );
 
   if (isLoading) {
     return (
@@ -184,10 +252,10 @@ const ReportPage = () => {
               </div>
             </div>
             <div className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-              Loading report data...
+              {t.loadingReportData}
             </div>
             <div className="text-gray-400 dark:text-gray-500 text-sm">
-              Please wait while we fetch the group information
+              {t.pleaseWaitWhileFetchingGroupInfo}
             </div>
           </div>
         </div>
@@ -197,187 +265,332 @@ const ReportPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <button
-            onClick={() => router.push("/grading")}
-            className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          className: "dark:bg-gray-800 dark:text-white",
+          style: {
+            padding: "16px",
+            borderRadius: "8px",
+          },
+          success: {
+            iconTheme: {
+              primary: "#10B981",
+              secondary: "white",
+            },
+            style: {
+              background: "#059669",
+              color: "white",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#EF4444",
+              secondary: "white",
+            },
+            style: {
+              background: "#DC2626",
+              color: "white",
+            },
+          },
+          loading: {
+            iconTheme: {
+              primary: "#3B82F6",
+              secondary: "white",
+            },
+            style: {
+              background: "#2563EB",
+              color: "white",
+            },
+          },
+        }}
+      />
+
+      <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <button
+              onClick={() => router.push("/grading")}
+              className="inline-flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            <span>Back to Grading</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Report Scores
-          </h1>
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              {t.backToGrading}
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {t.reportGradingTitle}
+            </h1>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search and Table section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <div className="mb-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by group name or student name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-              <span className="absolute right-3 top-2.5 text-gray-400">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </span>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+          {/* Search and Auto-save info section */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder={t.searchGroupsPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+                <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
             </div>
-          </div>
 
-          {/* Feedback Message */}
-          {feedbackMessage && (
-            <div
-              className={`mb-4 p-4 rounded-md ${
-                feedbackType === "success"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {feedbackMessage}
+            {/* Auto-save note */}
+            <div className="mb-6 text-sm text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 text-blue-500 dark:text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>{t.autoSaveNote}</span>
             </div>
-          )}
 
-          {/* Groups Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Group Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Students
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Group Average Score
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Teacher Score
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Total Average Score
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {currentGroups.map((group) => (
-                  <tr
-                    key={group.groupId}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {group.groupName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {group.students
-                        .map((student) => `${student.studentName}`)
-                        .join(", ")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {group.groupAverageScore !== null
-                        ? group.groupAverageScore.toFixed(2)
-                        : "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={group.teacherScore ?? ""}
-                        onChange={(e) =>
-                          handleTeacherScoreChange(
-                            group.groupId,
-                            e.target.value
-                          )
-                        }
-                        className="w-20 px-2 py-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {group.totalAverageScore !== null
-                        ? group.totalAverageScore.toFixed(2)
-                        : "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleOpenModal(group.groupId)}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        View Details
-                      </button>
-                    </td>
+            {/* Groups Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.groupId}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.groupMembers}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.groupAvgScore}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.teacherScore}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.totalAvgScore}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t.actions}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls */}
-          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
-              >
-                Next
-              </button>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {currentGroups.map((group) => (
+                    <tr
+                      key={group.groupId}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        {group.groupName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        {group.students
+                          .map((student) => `${student.studentName}`)
+                          .join(", ")}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        {group.groupAverageScore !== null
+                          ? group.groupAverageScore.toFixed(2)
+                          : "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={group.teacherScore ?? ""}
+                          onChange={(e) =>
+                            handleTeacherScoreChange(
+                              group.groupId,
+                              e.target.value
+                            )
+                          }
+                          disabled={isSaving}
+                          className="w-20 px-2 py-1 rounded-md border border-gray-300 dark:border-gray-600 
+                                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 
+                                     focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                                     disabled:opacity-50 disabled:cursor-not-allowed
+                                     [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        {group.totalAverageScore !== null
+                          ? group.totalAverageScore.toFixed(2)
+                          : "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleOpenModal(group.groupId)}
+                          disabled={isSaving}
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {t.viewDetails}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          {/* Submit Button */}
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={() => setIsConfirmModalOpen(true)}
-              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              Submit Scores
-            </button>
+            {/* Pagination Controls */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {t.pageOf
+                    .replace("{current}", currentPage.toString())
+                    .replace("{total}", totalPages.toString())}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* First Page Button */}
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="First page"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 19l-7-7m0 0l7-7m-7 7h18"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Previous Button */}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 
+                     hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {t.previous}
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {[...Array(Math.min(totalPages, 5))].map((_, idx) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = idx + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = idx + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + idx;
+                      } else {
+                        pageNum = currentPage - 2 + idx;
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-4 py-2 rounded-md transition-colors ${
+                            currentPage === pageNum
+                              ? "bg-blue-600 text-white"
+                              : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 
+                     hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {t.next}
+                  </button>
+
+                  {/* Last Page Button */}
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Last page"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Items per page selector */}
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="pageSize"
+                    className="text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    {t.itemsPerPage}
+                  </label>
+                  <select
+                    id="pageSize"
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      const newSize = parseInt(e.target.value);
+                      setItemsPerPage(newSize);
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 
+                     text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -419,7 +632,7 @@ const ReportPage = () => {
                 >
                   <div className="flex justify-between items-center mb-4">
                     <Dialog.Title as="h3" className="text-xl font-semibold">
-                      Students Score Detail
+                      {t.studentsScoreDetail}
                     </Dialog.Title>
                     <button
                       onClick={() => setIsModalOpen(false)}
@@ -446,10 +659,9 @@ const ReportPage = () => {
                   {modalData.length > 0 && (
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold mb-2">
-                        Scores received by {modalData[0].groupName}
+                        {t.groupMembers}
                       </h4>
                       <div className="mt-2">
-                        <strong>Group Members:</strong>
                         <ul className="list-disc pl-5 mb-4">
                           {modalData[0].students.map((student) => (
                             <li key={student.studentId}>
@@ -458,7 +670,7 @@ const ReportPage = () => {
                           ))}
                         </ul>
 
-                        <strong>Scores Received from Other Groups:</strong>
+                        <strong>{t.scoresReceivedFromOtherGroups}:</strong>
                         {modalData[0].scoresByGroup.map((groupScore) => (
                           <div
                             key={groupScore.scoringGroupId}
@@ -485,7 +697,7 @@ const ReportPage = () => {
                       <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
                         <p className="text-lg">
                           <strong>
-                            Group Average Score:{" "}
+                            {t.groupAvgScore}:{" "}
                             {modalData[0].groupAverageScore !== null
                               ? modalData[0].groupAverageScore.toFixed(2)
                               : "N/A"}
@@ -493,7 +705,7 @@ const ReportPage = () => {
                         </p>
                         <p className="text-lg">
                           <strong>
-                            Total Average Score:{" "}
+                            {t.totalAvgScore}:{" "}
                             {modalData[0].totalAverageScore !== null
                               ? modalData[0].totalAverageScore.toFixed(2)
                               : "N/A"}
@@ -509,74 +721,7 @@ const ReportPage = () => {
                       onClick={() => setIsModalOpen(false)}
                       className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
                     >
-                      Close
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-
-      {/* Confirmation Modal */}
-      <Transition appear show={isConfirmModalOpen} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-10"
-          onClose={() => setIsConfirmModalOpen(false)}
-        >
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-md" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
-                  >
-                    Confirm Submission
-                  </Dialog.Title>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Are you sure you want to submit these scores? This action
-                      cannot be undone.
-                    </p>
-                  </div>
-
-                  <div className="mt-4 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-red-100 px-4 py-2 text-sm font-medium text-red-900 hover:bg-red-200"
-                      onClick={() => setIsConfirmModalOpen(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-                      onClick={handleSubmit}
-                    >
-                      Confirm
+                      {t.cancel}
                     </button>
                   </div>
                 </Dialog.Panel>
