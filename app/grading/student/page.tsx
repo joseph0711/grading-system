@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 const StudentGradingPage = () => {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
+  const { t } = useSettings();
 
   useEffect(() => {
     const fetchSessionData = async () => {
@@ -46,8 +48,8 @@ const StudentGradingPage = () => {
   const gradingOptions = [
     {
       id: "PeerGrading",
-      title: "Peer Grading of Group Report",
-      description: "Grade and provide feedback for your peers' group reports",
+      title: t.peerGradingTitle,
+      description: t.peerGradingDesc,
       icon: "📊",
       color: "from-blue-500 to-blue-600",
       onClick: handlePeerReportClick,
@@ -76,7 +78,7 @@ const StudentGradingPage = () => {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            <span>Back to Dashboard</span>
+            <span>{t.backToDashboard}</span>
           </button>
         </div>
       </header>
@@ -85,10 +87,10 @@ const StudentGradingPage = () => {
         <div className="space-y-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Student Grading Dashboard
+              {t.studentGradingDashboard}
             </h2>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Select a category to start grading
+              {t.selectCategoryToGrade}
             </p>
           </div>
 
