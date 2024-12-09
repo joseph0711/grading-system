@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/app/contexts/SettingsContext";
+import { usePageTitle } from "@/app/hooks/usePageTitle";
 
 const StudentGradingPage = () => {
+  usePageTitle("studentGradingDashboard");
   const router = useRouter();
   const [userRole, setUserRole] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");

@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { translations } from "../translations";
 import { useSettings } from "../contexts/SettingsContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import ProtectedRoute from "@/app/components/ProtectedRoute";
 
 const GradingPage = () => {
+  usePageTitle("teacherGradingDashboard");
   const { t } = useSettings();
   const router = useRouter();
   const [courseId, setCourseId] = useState<string>("");
@@ -104,7 +106,11 @@ const GradingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <ProtectedRoute
+      requireCourse={true}
+      allowedRoles={["teacher"]}
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800"
+    >
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center">
           <button
@@ -167,7 +173,7 @@ const GradingPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 

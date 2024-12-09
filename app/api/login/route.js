@@ -116,6 +116,7 @@ export async function POST(request) {
     const payload = {
       account: user.account,
       role: user.role,
+      rememberMe: rememberMe,
     };
 
     // Sign the JWT

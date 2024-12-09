@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "../contexts/SettingsContext";
+import ProtectedRoute from "../components/ProtectedRoute";
+import { useAuth } from "../hooks/useAuth";
+import CourseInfoSkeleton from "../components/skeletons/CourseInfoSkeleton";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 interface CourseInfo {
   course_name: string;
@@ -21,64 +25,36 @@ interface GradingCriteria {
 export default function CourseInfo() {
   const { t } = useSettings();
   const router = useRouter();
-  const [courseId, setCourseId] = useState<string>("");
   const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
   const [gradingCriteria, setGradingCriteria] =
     useState<GradingCriteria | null>(null);
   const [error, setError] = useState<string>("");
-  const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const { user, isLoading: authLoading } = useAuth(true);
 
-  // Session handling
   useEffect(() => {
-    const fetchSessionData = async () => {
-      try {
-        const response = await fetch("/api/session");
-        const data = await response.json();
+    if (!user?.course_id) return;
 
-        if (response.ok && data.authenticated) {
-          if (data.user && data.user.course_id) {
-            setCourseId(data.user.course_id);
-            setUserRole(data.user.role);
-          } else {
-            console.error("No course ID found in session");
-            router.push("/select-course");
-          }
-        } else {
-          console.error("Invalid session response:", data);
-          router.push("/select-course");
-        }
-      } catch (error) {
-        console.error("Error fetching session data:", error);
-        router.push("/select-course");
-      }
-    };
-
-    fetchSessionData();
-  }, [router]);
-
-  // Fetch course data when courseId is available
-  useEffect(() => {
     const fetchData = async () => {
-      if (!courseId) return;
+      const startTime = Date.now();
 
       try {
-        // Fetch course info
-        const courseResponse = await fetch(
-          `/api/course-description?courseId=${courseId}`
-        );
-        const courseData = await courseResponse.json();
+        // Fetch course info and grading criteria concurrently
+        const [courseResponse, criteriaResponse] = await Promise.all([
+          fetch(`/api/course-description?courseId=${user.course_id}`),
+          fetch(`/api/course-grading-criteria?courseId=${user.course_id}`),
+        ]);
+
+        const [courseData, criteriaData] = await Promise.all([
+          courseResponse.json(),
+          criteriaResponse.json(),
+        ]);
 
         if (!courseResponse.ok) throw new Error(courseData.message);
-        setCourseInfo(courseData);
-
-        // Fetch grading criteria
-        const criteriaResponse = await fetch(
-          `/api/course-grading-criteria?courseId=${courseId}`
-        );
-        const criteriaData = await criteriaResponse.json();
-
         if (!criteriaResponse.ok) throw new Error(criteriaData.message);
+
+        setCourseInfo(courseData);
         setGradingCriteria(criteriaData);
       } catch (err) {
         setError(
@@ -87,93 +63,48 @@ export default function CourseInfo() {
             : "Failed to fetch course information"
         );
       } finally {
-        setIsLoading(false);
+        // Ensure minimum loading time
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(1000 - elapsedTime, 0);
+
+        setTimeout(() => {
+          setIsLoading(false);
+          setShowSkeleton(false);
+        }, remainingTime);
       }
     };
 
     fetchData();
-  }, [courseId]);
+  }, [user?.course_id]);
 
-  // Handle back navigation based on user role
   const handleBackNavigation = () => {
-    switch (userRole.toLowerCase()) {
-      case "teacher":
-        router.push("/dashboard/teacher");
-        break;
+    if (!user?.role) return;
+    switch (user.role.toLowerCase()) {
       case "student":
         router.push("/dashboard/student");
-        break;
-      default:
-        router.push("/dashboard");
         break;
     }
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+  const content = () => {
+    if (authLoading || isLoading || showSkeleton) {
+      return <CourseInfoSkeleton />;
+    }
+
+    if (error) {
+      return (
         <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
           <div className="text-red-500 text-xl mb-4">{t.error}</div>
           <div className="text-gray-600 dark:text-gray-300">{error}</div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (isLoading) {
+    if (!courseInfo || !gradingCriteria) {
+      return <CourseInfoSkeleton />;
+    }
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <div className="h-16 w-16">
-                <div className="absolute h-16 w-16 rounded-full border-4 border-t-blue-500 border-b-blue-700 border-l-blue-600 border-r-blue-600 animate-spin"></div>
-                <div className="absolute h-16 w-16 rounded-full border-4 border-blue-500 opacity-20"></div>
-              </div>
-            </div>
-            <div className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-              {t.loadingCourseInfo}
-            </div>
-            <div className="text-gray-400 dark:text-gray-500 text-sm">
-              {t.pleaseWaitCourseDetails}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!courseInfo || !gradingCriteria) return <div>Loading...</div>;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <button
-            onClick={handleBackNavigation}
-            className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            <span>{t.backToDashboard}</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t.courseInfo}
-          </h1>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Course Info Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
@@ -259,6 +190,43 @@ export default function CourseInfo() {
           </div>
         </div>
       </main>
-    </div>
+    );
+  };
+
+  usePageTitle("courseInfo");
+
+  return (
+    <ProtectedRoute requireCourse={true} allowedRoles={["student"]}>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+        <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <button
+              onClick={handleBackNavigation}
+              className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <span>{t.backToDashboard}</span>
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {t.courseInfo}
+            </h1>
+          </div>
+        </header>
+
+        {content()}
+      </div>
+    </ProtectedRoute>
   );
 }

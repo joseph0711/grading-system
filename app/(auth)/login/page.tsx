@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSettings } from "@/app/contexts/SettingsContext";
 import SettingsButtons from "../../components/SettingsButtons";
-import { toast, Toaster } from "react-hot-toast";
+import { useToast } from "@/app/hooks/useToast";
 
 interface LoginProps {
   onLogin: (
@@ -22,83 +22,98 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
   const { t } = useSettings();
+  const toast = useToast();
+  const lastShownMessage = useRef<string>("");
 
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [touched, setTouched] = useState({ account: false, password: false });
+  const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    if (loginStatus.message) {
-      toast.dismiss();
-      const toastId = "login-status-toast";
-
-      switch (loginStatus.type) {
-        case "error":
-          toast.error(
-            loginStatus.message.includes("Account is locked")
-              ? t.accountLocked.replace(
-                  "{minutes}",
-                  Math.ceil(loginStatus.remainingTime!).toString()
-                )
-              : loginStatus.message,
-            {
-              id: toastId,
-              duration: 4000,
-            }
-          );
-          break;
-        case "warning":
-          toast.custom(
-            <div className="bg-yellow-50 text-yellow-700 p-4 rounded-lg shadow-md flex items-start">
-              <svg
-                className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div>
-                {loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0 && (
-                  <p className="text-sm mt-1">
-                    {t.loginWarningAttempts
-                      .replace(
-                        "{attempts}",
-                        loginStatus.attemptsLeft.toString()
-                      )
-                      .replace(
-                        "{minutes}",
-                        loginStatus.remainingTime
-                          ? Math.ceil(loginStatus.remainingTime / 60).toString()
-                          : ""
-                      )}
-                  </p>
-                )}
-              </div>
-            </div>,
-            { id: toastId }
-          );
-          break;
-        case "info":
-          toast(loginStatus.message, { id: toastId });
-          break;
-      }
+  const handleBlur = (field: "account" | "password") => {
+    if (submitted) {
+      setTouched((prev) => ({ ...prev, [field]: true }));
     }
-  }, [loginStatus, t]);
+  };
+
+  const shouldShowError = (field: "account" | "password") => {
+    return submitted && touched[field] && !eval(field).trim();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
+    setTouched({ account: true, password: true });
+
+    if (!account.trim() || !password.trim()) {
+      return;
+    }
+
     await onLogin(account, password, rememberMe);
   };
 
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (value: string) => void
+  ) => {
+    if (submitted) {
+      setSubmitted(false);
+      setTouched({ account: false, password: false });
+    }
+    setter(e.target.value);
+  };
+
+  useEffect(() => {
+    const currentMessage = loginStatus.message;
+    const currentType = loginStatus.type;
+
+    if (
+      currentMessage &&
+      currentType &&
+      lastShownMessage.current !== currentMessage
+    ) {
+      // Dismiss any existing toasts first
+      toast.dismiss();
+      lastShownMessage.current = currentMessage;
+
+      // Use a small timeout to ensure previous toasts are dismissed
+      setTimeout(() => {
+        switch (currentType) {
+          case "error":
+            toast.error(
+              currentMessage.includes("Account is locked")
+                ? t.accountLocked.replace(
+                    "{minutes}",
+                    Math.ceil(loginStatus.remainingTime!).toString()
+                  )
+                : currentMessage
+            );
+            break;
+          case "warning":
+            toast.warning(
+              loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0
+                ? t.loginWarningAttempts
+                    .replace("{attempts}", loginStatus.attemptsLeft.toString())
+                    .replace(
+                      "{minutes}",
+                      loginStatus.remainingTime
+                        ? Math.ceil(loginStatus.remainingTime / 60).toString()
+                        : ""
+                    )
+                : currentMessage
+            );
+            break;
+          case "info":
+            toast.success(currentMessage);
+            break;
+        }
+      }, 100);
+    }
+  }, [loginStatus.message]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <Toaster position="top-center" />
-
       <div className="w-full max-w-md">
         <div className="fixed top-4 right-4">
           <SettingsButtons />
@@ -118,9 +133,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t.account}
+                <span className="text-red-500 ml-1">*</span>
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="relative flex items-center">
+                <div className="absolute left-3 pointer-events-none">
                   <svg
                     className={`h-5 w-5 ${
                       isLoading
@@ -142,28 +158,37 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
                 <input
                   type="text"
                   value={account}
-                  onChange={(e) => setAccount(e.target.value)}
+                  onChange={(e) => handleInputChange(e, setAccount)}
+                  onBlur={() => handleBlur("account")}
                   disabled={isLoading}
-                  className={`block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 
-                    rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                    focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm transition-colors
-                    ${
-                      isLoading
-                        ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                        : "bg-white"
-                    }`}
-                  required
+                  className={`block w-full pl-10 pr-3 py-2.5 border ${
+                    shouldShowError("account")
+                      ? "border-red-500 dark:border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
+                  } rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                  focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm transition-colors
+                  ${
+                    isLoading
+                      ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
+                      : "bg-white"
+                  }`}
                   placeholder={t.enterAccount}
                 />
               </div>
+              {shouldShowError("account") && (
+                <p className="mt-1 text-sm text-red-500">
+                  {t.account} {t.isRequired}
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t.password}
+                <span className="text-red-500 ml-1">*</span>
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="relative flex items-center">
+                <div className="absolute left-3 pointer-events-none">
                   <svg
                     className={`h-5 w-5 ${
                       isLoading
@@ -185,20 +210,28 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => handleInputChange(e, setPassword)}
+                  onBlur={() => handleBlur("password")}
                   disabled={isLoading}
-                  className={`block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 
-                    rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                    focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm transition-colors
-                    ${
-                      isLoading
-                        ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                        : "bg-white"
-                    }`}
-                  required
+                  className={`block w-full pl-10 pr-3 py-2.5 border ${
+                    shouldShowError("password")
+                      ? "border-red-500 dark:border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
+                  } rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
+                  focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700 text-sm transition-colors
+                  ${
+                    isLoading
+                      ? "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
+                      : "bg-white"
+                  }`}
                   placeholder={t.enterPassword}
                 />
               </div>
+              {shouldShowError("password") && (
+                <p className="mt-1 text-sm text-red-500">
+                  {t.password} {t.isRequired}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -208,7 +241,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={isLoading}
-                  className={`w-4 h-4 text-blue-600 border-gray-300 rounded 
+                  className={`w-4 h-4 text-blue-600 bg-white border-gray-300 rounded 
                     focus:ring-blue-500 dark:focus:ring-blue-400 
                     dark:bg-gray-700 dark:border-gray-600
                     ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}

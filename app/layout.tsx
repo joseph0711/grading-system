@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import ClientProvider from "./components/ClientProvider";
 import Footer from "./components/Footer";
-import { Toaster } from "react-hot-toast";
+import { ToastProvider } from "@/app/components/ToastProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -35,7 +35,7 @@ export default function RootLayout({
           <div className="flex-grow">{children}</div>
           <Footer />
         </ClientProvider>
-        <Toaster />
+        <ToastProvider />
       </body>
     </html>
   );

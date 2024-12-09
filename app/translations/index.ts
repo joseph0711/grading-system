@@ -1,5 +1,6 @@
 export const translations = {
   en: {
+    appName: "Grading System",
     welcome: "Welcome",
     signInToSystem: "Sign in to the system",
     account: "Account",
@@ -7,19 +8,19 @@ export const translations = {
     rememberMe: "Remember me",
     signIn: "Sign in",
     signingIn: "Signing in...",
-    
+
     // Dashboard
     studentDashboard: "Student Dashboard",
     teacherDashboard: "Teacher Dashboard",
     backToCourses: "Back to Courses",
-    
+
     // Navigation
     grading: "Grading",
     courseInfo: "Course Information",
-    viewScore: "View Score",
+    viewScore: "View Scores",
     manageCourse: "Manage Course",
     calculate: "Calculate",
-    
+
     // Grading sections
     attendance: "Attendance",
     participation: "Participation",
@@ -27,7 +28,7 @@ export const translations = {
     final: "Final",
     peerGrading: "Peer Grading",
     groupReport: "Group Report",
-    
+
     // Actions
     save: "Save",
     cancel: "Cancel",
@@ -35,14 +36,14 @@ export const translations = {
     delete: "Delete",
     search: "Search",
     logout: "Logout",
-    
+
     // Messages
     loading: "Loading...",
     serverError: "Server error",
     notAuthenticated: "Not authenticated",
     saveSuccess: "Successfully saved",
     saveFailed: "Failed to save",
-    
+
     // Table headers
     studentId: "Student ID",
     name: "Name",
@@ -65,7 +66,7 @@ export const translations = {
     checkBackLater: "Check back later for available courses",
     loadingCourses: "Loading courses...",
     pleaseWaitCourses: "Please wait while we fetch your courses",
-    
+
     // Grading Common
     loadingData: "Loading data...",
     pleaseWaitData: "Please wait while we fetch the information",
@@ -85,15 +86,15 @@ export const translations = {
     // Attendance Grading
     attendanceGrading: "Attendance Grading",
     loadingAttendance: "Loading attendance data...",
-    
+
     // Participation Grading
     participationGrading: "Participation Grading",
     loadingParticipation: "Loading participation data...",
-    
+
     // Midterm Grading
     midtermGrading: "Midterm Exam Grading",
     loadingMidterm: "Loading midterm exam data...",
-    
+
     // Final Grading
     finalGrading: "Final Exam Grading",
     loadingFinal: "Loading final exam data...",
@@ -143,16 +144,14 @@ export const translations = {
     filterByDepartment: "Filter by department",
     allDepartments: "All departments",
     sortBy: "Sort by",
-   
-    
+
+
     // Manage Course - Table Headers
     studentName: "Student Name",
-    
-    
-    
+
     // Manage Course - Actions
     deleteSelected: "Delete Selected",
-    
+
     // Manage Course - Modals
     editStudent: "Edit Student",
     deleteStudent: "Delete Student",
@@ -170,7 +169,7 @@ export const translations = {
     searchStudentsPlaceholder: "Search students...",
     searchGroupsPlaceholder: "Search groups...",
     loadingStudentInfo: "Please wait while we fetch the student information",
-    
+
     // Teacher Grading Options
     attendanceGradingTitle: "Attendance",
     attendanceGradingDesc: "Manage and grade student attendance records",
@@ -188,9 +187,7 @@ export const translations = {
     peerGradingDesc: "Grade and provide feedback for your peers' group reports",
 
     // Table Headers
-    
     groupId: "Group ID",
-    
     groupMembers: "Group Members",
     groupAvgScore: "Group Average Score",
     teacherScore: "Teacher Score",
@@ -209,9 +206,86 @@ export const translations = {
     confirmSubmitScores: "Confirm Submission",
     confirmSubmitDesc: "Are you sure you want to submit these scores? This action cannot be undone.",
     noScoresEntered: "No scores entered to submit.",
+    courseId: "Course ID",
+    selectDepartment: "Select Department",
+    autoSaveNote: "Changes are automatically saved as you type. No manual save required.",
+    studentsScoreDetail: "Students Score Detail",
+    itemsPerPage: "Items per page",
+    loadingReportData: "Loading report data...",
+    pleaseWaitWhileFetchingGroupInfo: "Please wait while we fetch the group information",
+    viewDetails: "View Details",
+    scoresReceivedFromOtherGroups: "Scores Received from Other Groups",
+    scoreMustBeBetween0And100: "Score must be between 0 and 100",
+    pleaseWaitWhileFetchingStudentInformation: "Please wait while we fetch the student information",
+    noStudentsFound: "No students found",
+    absenceTimes: "Absence Times",
+    absenceTimesMustBeBetween0And10: "Absence times must be between 0 and 10",
+    participationTimesMustBeBetween0And10: "Participation times must be between 0 and 10",
+    participationTimes: "Participation Times",
+    pleaseWaitWhileFetchingPeerEvalData: "Please wait while we fetch the peer evaluation data",
+    peerEvaluationReport: "Peer Evaluation Report",
+    noPeerScoresAvailable: "No peer scores available",
+    accountLocked: "Account is locked. Please try again in {minutes} minutes.",
+    loadingCourseData: "Loading course data...",
+    pleaseWaitWhileFetchingCourseInformation: "Please wait while we fetch your course information",
+    unauthorized: "Unauthorized Access",
+    unauthorizedMessage: "You don't have permission to access this page.",
+    backToLogin: "Back to Login",
+    authenticationFailed: "Authentication failed",
+    pleaseLoginFirst: "Please login first",
+    noCourseSelected: "No course selected",
+    pleaseSelectCourseFirst: "Please select a course first",
+    scoreWeightsConfiguration: "Score Weights Configuration",
+    calculateSemesterScores: "Calculate Semester Scores",
+    status: "Status",
+    details: "Details",
+    discardChanges: "Discard Changes",
+    keepEditing: "Keep Editing",
+    scoreCalculationDetails: "Score Calculation Details",
+    close: "Close",
+    weight: "Weight",
+    totalWeight: "Total Weight",
+    calculateSemesterScoresMessage: "Have you checked the scores and confirmed to calculate the total scores for all students?",
+    discardChangesMessage: "Are you sure you want to discard all changes? This action cannot be undone.",
+    classSummary: "Class Summary",
+    totalStudents: "Total Students",
+    passed: "Passed",
+    failed: "Failed",
+    semesterScoresResults: "Semester Scores Results",
+    classAverage: "Class Average",
+    passRate: "Pass Rate",
+    aToZ: "A to Z",
+    zToA: "Z to A",
+    lowToHigh: "Low to High",
+    highToLow: "High to Low",
+    passFirst: "Pass First",
+    failFirst: "Fail First",
+    semesterScore: "Semester Score",
+    weighted: "Weighted",
+    semesterScoresCalculatedAndSaved: "Semester scores calculated and saved!",
+    weightsSavedSuccessfully: "Weights saved successfully!",
+    scoreDistribution: "Score Distribution",
+    generateChart: "Generate Chart",
+    passFailRatio: "Pass/Fail Ratio",
+    studentScores: "Student Scores",
+    exportCSV: "Export CSV",
+    studentCount: "Student Count",
+    scoreRange: "Score Range",
+    clickGenerateToShowChart: "Click 'Generate Chart' to visualize the data",
+    totalWeightExceeds100: "Total weight exceeds 100%",
+    totalWeightMustBe100: "Total weight must be 100%",
     
+    reportGrading: "Group Report Grading",
+    teacherGradingDashboard: "Teacher Grading Dashboard",
+    loginPage: "Login Page",
+    selectCoursePage: "Select Course",
+    exportExcel: "Export Excel",
+    downloadChart: "Download Chart",
+    noDataAvailable: "No data available",
+    isRequired: "is required",
   },
   zh: {
+    appName: "給分核算系統",
     welcome: "歡迎",
     signInToSystem: "登入系統",
     account: "帳號",
@@ -219,20 +293,20 @@ export const translations = {
     rememberMe: "記住我",
     signIn: "登入",
     signingIn: "登入中...",
-    
+
     // Dashboard
     studentDashboard: "學生儀表板",
     teacherDashboard: "教師儀表板",
     backToCourses: "返回課程",
     backToDashboard: "返回儀表板",
-    
+
     // Navigation
     grading: "給分",
     courseInfo: "課程資訊",
     viewScore: "查看成績",
     manageCourse: "課程管理",
-    calculate: "計算成績",
-    
+    calculate: "計算學期成績",
+
     // Grading sections
     attendance: "出缺席",
     participation: "課堂參與",
@@ -240,7 +314,7 @@ export const translations = {
     final: "期末考",
     peerGrading: "同儕互評",
     groupReport: "小組報告",
-    
+
     // Actions
     save: "儲存",
     cancel: "取消",
@@ -248,15 +322,15 @@ export const translations = {
     delete: "刪除",
     search: "搜尋",
     logout: "登出",
-    
-    
+
+
     // Messages
     loading: "載入中...",
     serverError: "伺服器錯誤",
     notAuthenticated: "未登入",
     saveSuccess: "儲存成功",
     saveFailed: "儲存失敗",
-    
+
     // Table headers
     studentId: "學號",
     name: "姓名",
@@ -277,7 +351,7 @@ export const translations = {
     checkBackLater: "請稍後再查看可用課程",
     loadingCourses: "載入課程中...",
     pleaseWaitCourses: "請稍候，正在獲取您的課程",
-    
+
     // Grading Common
     loadingData: "載入資料中...",
     pleaseWaitData: "請稍候，正在獲取資訊",
@@ -289,29 +363,29 @@ export const translations = {
     submit: "提交",
     confirmSubmission: "確認提交",
     confirmSubmissionDesc: "您確定要提交這些分數嗎？此操作無法撤銷。",
-    noScoresToSubmit: "尚未輸入任何分數。", 
+    noScoresToSubmit: "尚未輸入任何分數。",
     submitSuccess: "分數提交成功！",
-    submitError: "提交分數時發生錯誤。",
+    submitError: "提交��數發生錯誤。",
     invalidScores: "請在提交前修正無效的分數。",
 
     // Attendance Grading
-    attendanceGrading: "出席評分",
-    loadingAttendance: "載入出席資料中...",
-    
+    attendanceGrading: "出缺席",
+    loadingAttendance: "載入出缺席資料中...",
+
     // Participation Grading
     participationGrading: "參與度評分",
     loadingParticipation: "載入參與度資料中...",
-    
+
     // Midterm Grading
     midtermGrading: "期中考評分",
     loadingMidterm: "載入期中考資料中...",
-    
+
     // Final Grading
     finalGrading: "期末考評分",
     loadingFinal: "載入期末考資料中...",
-    
+
     // Peer Report Grading
-    peerReportGrading: "同儕評分",
+    peerReportGrading: "同儕互評",
     loadingPeer: "載入同儕評分資料中...",
     group: "第 {id} 組",
     invalidScoresDetected: "檢測到無效的分數。請檢查您的輸入。",
@@ -356,14 +430,14 @@ export const translations = {
     filterByDepartment: "按系所篩選",
     allDepartments: "所有系所",
     sortBy: "排序方式",
-    
+
     // Manage Course - Table Headers
     studentName: "姓名",
     actions: "操作",
-    
+
     // Manage Course - Actions
     deleteSelected: "刪除所選",
-    
+
     // Manage Course - Modals
     editStudent: "編輯學生資料",
     deleteStudent: "刪除學生",
@@ -376,17 +450,17 @@ export const translations = {
 
     // Grading Common
     gradingDashboard: "評分儀表板",
-    
+
     backToGrading: "返回評分",
     searchStudentsPlaceholder: "搜尋學生...",
     searchGroupsPlaceholder: "搜尋小組...",
     loadingStudentInfo: "請稍候，正在獲取學生資訊",
-    
+
     // Teacher Grading Options
     attendanceGradingTitle: "出席",
-    attendanceGradingDesc: "管理和評分學生出席記錄",
+    attendanceGradingDesc: "管理學生出席記錄",
     participationGradingTitle: "參與",
-    participationGradingDesc: "追蹤和評分學生參與情況",
+    participationGradingDesc: "追蹤學生參與情況",
     midtermGradingTitle: "期中考試",
     midtermGradingDesc: "評分期中考試成績",
     finalGradingTitle: "期末考試",
@@ -396,12 +470,10 @@ export const translations = {
 
     // Student Grading Options
     peerGradingTitle: "小組報告同儕評分",
-    peerGradingDesc: "為同儕的小組報告評分並提供回饋",
+    peerGradingDesc: "為其他組報告內容評分",
 
     // Table Headers
-    
     groupId: "小組編號",
-
     groupMembers: "小組成員",
     groupAvgScore: "小組平均分數",
     teacherScore: "教師評分",
@@ -420,6 +492,100 @@ export const translations = {
     confirmSubmitScores: "確認提交",
     confirmSubmitDesc: "您確定要提交這些分數嗎？此操作無法撤銷。",
     noScoresEntered: "尚未輸入任何分數。",
+
+    addNewCourse: "新增課程",
+    add: "新增",
+    confirmDeleteCourse: "確認刪除課程",
+    confirmDeleteCourseDesc: "您確定要刪除這門課程嗎？此操作無法撤銷。",
+    deleteCourse: "刪除課程",
+    courseId: "課程編號",
+    selectDepartment: "選擇系所",
+    selectStudentsError: "請至少選擇一名學生",
+    gradingCriteriaError: "總評分標準必須等於100%",
+    availableStudents: "可選學生",
+    selectedStudents: "已���學生",
+    courseIdError: "課程編號必須是4位數字",
+    courseNameError: "課程名稱只能包含字母和空格",
+    departmentError: "請選擇一個系所",
+    courseDescriptionPlaceholder: "輸入課程說明...",
+    charactersRemaining: "剩餘字數：{remaining}",
+    totalPercentage: "總百分比：{total}",
+    gradingCriteriaDescription: "請輸入每個評分標準的百分比",
+    departmentRequired: "請選擇一個系所",
+    autoSaveNote: "變更會隨著輸入自動儲存，無需手動儲存。",
+    studentsScoreDetail: "學生分數詳情",
+    itemsPerPage: "每頁項目數",
+    loadingReportData: "載入報告資料中...",
+    pleaseWaitWhileFetchingGroupInfo: "請稍候，正在獲取小組資訊",
+    viewDetails: "查看詳情",
+    scoresReceivedFromOtherGroups: "來自其他小組的評分",
+    scoreMustBeBetween0And100: "分數必須在0到100之間",
+    pleaseWaitWhileFetchingStudentInformation: "請稍候，正在獲取學生資訊",
+    noStudentsFound: "未找到學生",
+    absenceTimes: "缺席次數",
+    absenceTimesMustBeBetween0And10: "缺席次數必須在0到10之間",
+    participationTimesMustBeBetween0And10: "參與次數必須在0到10之間",
+    participationTimes: "參與次數",
+    pleaseWaitWhileFetchingPeerEvalData: "請稍候，正在獲取同儕評估資料",
+    peerEvaluationReport: "同儕互評",
+    noPeerScoresAvailable: "無同儕互評分數",
+    accountLocked: "帳號已鎖定， {minutes} 分鐘後再嘗試登入。",
+    loadingCourseData: "載入課程資料中...",
+    pleaseWaitWhileFetchingCourseInformation: "請稍候，正在獲取課程資訊",
+    unauthorized: "未允許操作",
+    unauthorizedMessage: "無權限進入該頁面",
+    backToLogin: "返回登入頁面",
+    authenticationFailed: "驗證失敗",
+    pleaseLoginFirst: "請先登入",
+    noCourseSelected: "未選擇課程",
+    pleaseSelectCourseFirst: "請先選擇課程",
+    scoreWeightsConfiguration: "分數權重調整",
+    calculateSemesterScores: "計算學期成績",
+    status: "狀態",
+    details: "詳情",
+    discardChanges: "捨棄變更",
+    keepEditing: "繼續編輯",
+    scoreCalculationDetails: "成績計算詳情",
+    close: "關閉",
+    weight: "權重",
+    totalWeight: "總權重",
+    calculateSemesterScoresMessage: "您確定要計算所有學生的學期成績嗎？",
+    discardChangesMessage: "您確定要捨棄所有變更嗎？此操作無法撤銷。",
+    classSummary: "班級總結",
+    totalStudents: "總學生數",
+    passed: "及格",
+    failed: "不及格",
+    classAverage: "平均",
+    passRate: "及格率",
+    semesterScoresResults: "學期成績結果",
+    aToZ: "A到Z",
+    zToA: "Z到A",
+    lowToHigh: "低到高",
+    highToLow: "高到低",
+    passFirst: "及格優先",
+    failFirst: "不及格優先",
+    semesterScore: "學期成績",
+    weighted: "加權後分數",
+    semesterScoresCalculatedAndSaved: "學期成績計算完成並儲存！",
+    weightsSavedSuccessfully: "分數權重儲存成功！",
+    scoreDistribution: "成績分布",
+    generateChart: "生成圖表",
+    passFailRatio: "及格/不及格比例",
+    studentScores: "學生成績",
+    exportCSV: "匯出CSV",
+    studentCount: "學生人數",
+    scoreRange: "分數區間",
+    clickGenerateToShowChart: "點擊「生成圖表」以視覺化資料",
+    totalWeightExceeds100: "總權重超過100%",
+    totalWeightMustBe100: "總權重必須為100%",
     
-  }
+    reportGrading: "小組報告評分",
+    teacherGradingDashboard: "教師評分儀表板",
+    loginPage: "登入頁面",
+    selectCoursePage: "選擇課程",
+    exportExcel: "匯出 Excel",
+    downloadChart: "下載圖表",
+    noDataAvailable: "無資料可用",
+    isRequired: "必填欄位",
+  },
 }; 

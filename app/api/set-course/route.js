@@ -27,7 +27,9 @@ export async function POST(request) {
         course_id: courseId,
       },
       secretKey,
-      { expiresIn: "24h" }
+      {
+        expiresIn: decodedWithoutExp.rememberMe ? "30d" : "24h",
+      }
     );
 
     // Set the new token in cookies
@@ -35,7 +37,7 @@ export async function POST(request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: decodedWithoutExp.rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60, // 30 days or 24 hours
     });
 
     return NextResponse.json({ success: true });

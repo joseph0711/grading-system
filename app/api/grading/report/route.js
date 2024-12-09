@@ -81,7 +81,6 @@ export async function GET(request) {
       WHERE g.course_id = ${pool.escape(course_id)}
       GROUP BY g.group_id, rts.score, ga.group_average_score`;
 
-    console.log(query);
     const [rows] = await pool.query(query);
 
     const formattedGroups = rows.map((row) => ({
@@ -93,8 +92,6 @@ export async function GET(request) {
       students: row.students || [],
       scoresByGroup: row.scores_by_group || [],
     }));
-
-    console.log(formattedGroups);
 
     return NextResponse.json({ groups: formattedGroups }, { status: 200 });
   } catch (error) {
@@ -137,7 +134,7 @@ export async function POST(request) {
       }
     }
 
-    // Handle single score update (auto-save) or multiple scores (submit)
+    // Handle single score update (auto-save)
     const insertValues = groups
       .filter((group) => group.teacherScore !== null)
       .map((group) => [
@@ -165,14 +162,48 @@ export async function POST(request) {
         VALUES ?`;
 
       await pool.query(insertQuery, [insertValues]);
+
+      // Update the final scores in grading.score table
+      for (const group of groups) {
+        if (group.teacherScore !== null) {
+          // Get the peer group average score
+          const [peerScores] = await pool.query(
+            `
+            SELECT AVG(score_value) as peer_average
+            FROM report_peer_scores
+            WHERE course_id = ? AND scored_group_id = ?
+            GROUP BY scored_group_id
+          `,
+            [course_id, group.groupId]
+          );
+
+          const peerAverage = peerScores[0]?.peer_average || null;
+          const finalScore = peerAverage
+            ? Math.round((group.teacherScore + parseFloat(peerAverage)) / 2)
+            : Math.round(group.teacherScore);
+
+          // Update report_score for all students in the group
+          await pool.query(
+            `
+            UPDATE grading.score s
+            JOIN \`group\` g ON s.student_id = g.student_id
+            SET s.report_score = ?
+            WHERE g.group_id = ?
+            AND g.course_id = ?
+            AND s.course_id = ?
+          `,
+            [finalScore, group.groupId, course_id, course_id]
+          );
+        }
+      }
     }
 
     return NextResponse.json(
-      { message: "Teacher scores updated successfully" },
+      { message: "Teacher scores and report scores updated successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error updating teacher scores:", error);
+    console.error("Error updating scores:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
       { status: 500 }

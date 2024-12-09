@@ -4,15 +4,21 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSettings } from "../../contexts/SettingsContext";
 import SettingsButtons from "../../components/SettingsButtons";
+import ProtectedRoute from "../../components/ProtectedRoute";
+import DashboardSkeleton from "../../components/skeletons/DashboardSkeleton";
+import { usePageTitle } from "../../hooks/usePageTitle";
 
 const TeacherHome = () => {
   const router = useRouter();
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const { t } = useSettings();
+  usePageTitle("teacherDashboard");
 
   useEffect(() => {
     const fetchUserData = async () => {
+      const startTime = Date.now();
+
       try {
         const response = await fetch("/api/dashboard");
         const data = await response.json();
@@ -21,13 +27,17 @@ const TeacherHome = () => {
           setUserName(data.name);
         } else {
           console.error("Failed to fetch user data:", data.error);
-          router.push("/select-course");
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        router.push("/select-course");
       } finally {
-        setLoading(false);
+        // Ensure minimum 2 seconds of loading
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(1000 - elapsedTime, 0);
+
+        setTimeout(() => {
+          setLoading(false);
+        }, remainingTime);
       }
     };
 
@@ -128,57 +138,68 @@ const TeacherHome = () => {
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col items-center space-y-8">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-            {loading ? t.loading : `${t.welcome} ${userName}`}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
-            {[
-              {
-                title: t.grading,
-                description: t.gradeAssignments,
-                icon: "📝",
-                onClick: handleGradingClick,
-                className: "bg-gradient-to-br from-blue-500 to-blue-600",
-              },
-              {
-                title: t.manageCourse,
-                description: t.updateCourse,
-                icon: "📚",
-                onClick: handleManageCourseClick,
-                className: "bg-gradient-to-br from-green-500 to-green-600",
-              },
-              {
-                title: t.viewScore,
-                description: t.reviewGrades,
-                icon: "📊",
-                onClick: handleViewScoreClick,
-                className: "bg-gradient-to-br from-yellow-500 to-yellow-600",
-              },
-              {
-                title: t.calculate,
-                description: t.calculateGrades,
-                icon: "🧮",
-                onClick: handleCalculateClick,
-                className: "bg-gradient-to-br from-purple-500 to-purple-600",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                onClick={item.onClick}
-                className={`${item.className} p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-white`}
-              >
-                <div className="text-4xl mb-4">{item.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm opacity-90">{item.description}</p>
-              </div>
-            ))}
+      {loading ? (
+        <DashboardSkeleton />
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center space-y-8">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+              {loading ? t.loading : `${t.welcome} ${userName}`}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
+              {[
+                {
+                  title: t.grading,
+                  description: t.gradeAssignments,
+                  icon: "📝",
+                  onClick: handleGradingClick,
+                  className: "bg-gradient-to-br from-blue-500 to-blue-600",
+                },
+                {
+                  title: t.manageCourse,
+                  description: t.updateCourse,
+                  icon: "📚",
+                  onClick: handleManageCourseClick,
+                  className: "bg-gradient-to-br from-green-500 to-green-600",
+                },
+                {
+                  title: t.viewScore,
+                  description: t.reviewGrades,
+                  icon: "📊",
+                  onClick: handleViewScoreClick,
+                  className: "bg-gradient-to-br from-yellow-500 to-yellow-600",
+                },
+                {
+                  title: t.calculate,
+                  description: t.calculateGrades,
+                  icon: "🧮",
+                  onClick: handleCalculateClick,
+                  className: "bg-gradient-to-br from-purple-500 to-purple-600",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  onClick={item.onClick}
+                  className={`${item.className} p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-white`}
+                >
+                  <div className="text-4xl mb-4">{item.icon}</div>
+                  <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                  <p className="text-sm opacity-90">{item.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      )}
     </div>
   );
 };
 
-export default TeacherHome;
+// Wrap the default export with ProtectedRoute
+export default function TeacherDashboardPage() {
+  return (
+    <ProtectedRoute requireCourse={true} allowedRoles={["teacher"]}>
+      <TeacherHome />
+    </ProtectedRoute>
+  );
+}
