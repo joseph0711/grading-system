@@ -158,12 +158,9 @@ export const translations = {
     deleteAllSelected: "Delete All Selected",
 
     // Student Dashboard
-    gradeAndPeerReview: "Grade assignments and peer reviews",
-    viewCourseDetails: "View course details and materials",
-    checkGradesAndFeedback: "Check your grades and feedback",
-
-    // Grading Common
-    gradingDashboard: "Grading Dashboard",
+    gradeAndPeerReview: "Grade for others group report",
+    viewCourseDetails: "View course details and score weights",
+    checkGradesAndFeedback: "Check grades on this course",
 
     backToGrading: "Back to Grading",
     searchStudentsPlaceholder: "Search students...",
@@ -171,8 +168,8 @@ export const translations = {
     loadingStudentInfo: "Please wait while we fetch the student information",
 
     // Teacher Grading Options
-    attendanceGradingTitle: "Attendance",
-    attendanceGradingDesc: "Manage and grade student attendance records",
+    attendanceGradingTitle: "Absence",
+    attendanceGradingDesc: "Manage and grade student absences",
     participationGradingTitle: "Participation",
     participationGradingDesc: "Track and grade student participation",
     midtermGradingTitle: "Midterm Exam",
@@ -183,8 +180,8 @@ export const translations = {
     reportGradingDesc: "Evaluate group project reports",
 
     // Student Grading Options
-    peerGradingTitle: "Peer Grading of Group Report",
-    peerGradingDesc: "Grade and provide feedback for your peers' group reports",
+    peerGradingTitle: "Peer Report Grading",
+    peerGradingDesc: "Grade for other group reports",
 
     // Table Headers
     groupId: "Group ID",
@@ -305,7 +302,7 @@ export const translations = {
     courseInfo: "課程資訊",
     viewScore: "查看成績",
     manageCourse: "課程管理",
-    calculate: "計算學期成績",
+    calculate: "核算",
 
     // Grading sections
     attendance: "出缺席",
@@ -337,14 +334,14 @@ export const translations = {
     department: "系所",
     class: "班級",
     score: "分數",
-    gradeAssignments: "評分作業和管理學生提交",
-    updateCourse: "更新課程詳情和管理教材",
+    gradeAssignments: "評分各個成績項目",
+    updateCourse: "管理課程詳情及修課學生",
     reviewGrades: "查看學生成績和統計",
-    calculateGrades: "計算成績和統計",
-    studentGradingDashboard: "學生評分儀表板",
-    selectCategoryToGrade: "選擇類別開始評分",
-    peerGradingReport: "同儕小組報告評分",
-    peerGradingDescription: "為同學的小組報告評分並提供回饋",
+    calculateGrades: "計算全班學期成績",
+    studentGradingDashboard: "學生給分儀表板",
+    selectCategoryToGrade: "選擇類別開始給分",
+    peerGradingReport: "同儕小組報告給分",
+    peerGradingDescription: "為同儕小組報告進行給分",
     myCourses: "我的課程",
     enterCourse: "進入課程",
     noCoursesFound: "未找到課程",
@@ -369,24 +366,24 @@ export const translations = {
     invalidScores: "請在提交前修正無效的分數。",
 
     // Attendance Grading
-    attendanceGrading: "出缺席",
+    attendanceGrading: "出缺席給分",
     loadingAttendance: "載入出缺席資料中...",
 
     // Participation Grading
-    participationGrading: "參與度評分",
+    participationGrading: "參與度給分",
     loadingParticipation: "載入參與度資料中...",
 
     // Midterm Grading
-    midtermGrading: "期中考評分",
+    midtermGrading: "期中考給分",
     loadingMidterm: "載入期中考資料中...",
 
     // Final Grading
-    finalGrading: "期末考評分",
+    finalGrading: "期末考給分",
     loadingFinal: "載入期末考資料中...",
 
     // Peer Report Grading
-    peerReportGrading: "同儕互評",
-    loadingPeer: "載入同儕評分資料中...",
+    peerReportGrading: "同儕小組報告給分",
+    loadingPeer: "載入同儕小組報告給分資料中...",
     group: "第 {id} 組",
     invalidScoresDetected: "檢測到無效的分數。請檢查您的輸入。",
 
@@ -444,7 +441,7 @@ export const translations = {
     deleteAllSelected: "刪除所有所選項目",
 
     // Student Dashboard
-    gradeAndPeerReview: "評分作業和同儕評審",
+    gradeAndPeerReview: "同儕小組報告互評",
     viewCourseDetails: "查看課程詳情和教材",
     checkGradesAndFeedback: "查看成績和回饋",
 
@@ -457,20 +454,20 @@ export const translations = {
     loadingStudentInfo: "請稍候，正在獲取學生資訊",
 
     // Teacher Grading Options
-    attendanceGradingTitle: "出席",
+    attendanceGradingTitle: "出缺席",
     attendanceGradingDesc: "管理學生出席記錄",
-    participationGradingTitle: "參與",
-    participationGradingDesc: "追蹤學生參與情況",
-    midtermGradingTitle: "期中考試",
-    midtermGradingDesc: "評分期中考試成績",
-    finalGradingTitle: "期末考試",
-    finalGradingDesc: "評分期末考試成績",
+    participationGradingTitle: "參與度",
+    participationGradingDesc: "追蹤學生參與度情況",
+    midtermGradingTitle: "期中考",
+    midtermGradingDesc: "評分期中考成績",
+    finalGradingTitle: "期末考",
+    finalGradingDesc: "評分期末考成績",
     reportGradingTitle: "小組報告",
-    reportGradingDesc: "評估小組專案報告",
+    reportGradingDesc: "評分各小組報告",
 
     // Student Grading Options
-    peerGradingTitle: "小組報告同儕評分",
-    peerGradingDesc: "為其他組報告內容評分",
+    peerGradingTitle: "同儕小組報告",
+    peerGradingDesc: "為同儕小組報告進行給分",
 
     // Table Headers
     groupId: "小組編號",
@@ -503,7 +500,7 @@ export const translations = {
     selectStudentsError: "請至少選擇一名學生",
     gradingCriteriaError: "總評分標準必須等於100%",
     availableStudents: "可選學生",
-    selectedStudents: "已���學生",
+    selectedStudents: "已選學生",
     courseIdError: "課程編號必須是4位數字",
     courseNameError: "課程名稱只能包含字母和空格",
     departmentError: "請選擇一個系所",
@@ -527,7 +524,7 @@ export const translations = {
     participationTimesMustBeBetween0And10: "參與次數必須在0到10之間",
     participationTimes: "參與次數",
     pleaseWaitWhileFetchingPeerEvalData: "請稍候，正在獲取同儕評估資料",
-    peerEvaluationReport: "同儕互評",
+    peerEvaluationReport: "同儕小組報告互評",
     noPeerScoresAvailable: "無同儕互評分數",
     accountLocked: "帳號已鎖定， {minutes} 分鐘後再嘗試登入。",
     loadingCourseData: "載入課程資料中...",
@@ -540,7 +537,7 @@ export const translations = {
     noCourseSelected: "未選擇課程",
     pleaseSelectCourseFirst: "請先選擇課程",
     scoreWeightsConfiguration: "分數權重調整",
-    calculateSemesterScores: "計算學期成績",
+    calculateSemesterScores: "核算",
     status: "狀態",
     details: "詳情",
     discardChanges: "捨棄變更",
@@ -579,8 +576,8 @@ export const translations = {
     totalWeightExceeds100: "總權重超過100%",
     totalWeightMustBe100: "總權重必須為100%",
     
-    reportGrading: "小組報告評分",
-    teacherGradingDashboard: "教師評分儀表板",
+    reportGrading: "小組報告給分",
+    teacherGradingDashboard: "教師給分儀表板",
     loginPage: "登入頁面",
     selectCoursePage: "選擇課程",
     exportExcel: "匯出 Excel",

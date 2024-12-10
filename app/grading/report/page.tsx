@@ -176,8 +176,10 @@ const ReportPage = () => {
       const searchString = searchTerm.toLowerCase();
       return (
         group.groupName.toLowerCase().includes(searchString) ||
-        group.students.some((student) =>
-          student.studentName.toLowerCase().includes(searchString)
+        group.students.some(
+          (student) =>
+            student.studentName.toLowerCase().includes(searchString) ||
+            student.studentId.toString().toLowerCase().includes(searchString)
         )
       );
     }) || [];
@@ -251,7 +253,7 @@ const ReportPage = () => {
               {t.backToGrading}
             </button>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {t.reportGradingTitle}
+              {t.reportGrading}
             </h1>
           </div>
         </div>
