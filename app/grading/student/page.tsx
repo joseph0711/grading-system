@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/app/contexts/SettingsContext";
 import { usePageTitle } from "@/app/hooks/usePageTitle";
+import ProtectedRoute from "@/app/components/ProtectedRoute";
 
 const StudentGradingPage = () => {
   usePageTitle("studentGradingDashboard");
@@ -60,7 +61,11 @@ const StudentGradingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <ProtectedRoute
+      requireCourse={true}
+      allowedRoles={["student"]}
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
+    >
       <header className="sticky top-0 z-10 backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center">
           <button
@@ -123,7 +128,7 @@ const StudentGradingPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 

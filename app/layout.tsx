@@ -17,8 +17,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Your System Name",
-  description: "Your system description",
+  title: "Grading System",
+  description: "Grading System",
 };
 
 export default function RootLayout({
@@ -32,7 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <ClientProvider>
-          <div className="flex-grow">{children}</div>
+          <main className="pb-22">{children}</main>
           <Footer />
         </ClientProvider>
         <ToastProvider />

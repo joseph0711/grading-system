@@ -1144,3 +1144,5 @@ const ManageCoursePage = () => {
     </ProtectedRoute>
   );
 };
+
+export default ManageCoursePage;
