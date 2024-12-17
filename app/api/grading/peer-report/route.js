@@ -38,7 +38,7 @@ export async function GET(request) {
       );
     }
 
-    // Query for the report view
+    // Modified query to get other groups' information
     const reportQuery = `
       WITH UserGroup AS (
         SELECT group_id
@@ -47,8 +47,10 @@ export async function GET(request) {
       )
       SELECT DISTINCT 
         g.group_id as scored_group_id,
+        GROUP_CONCAT(DISTINCT s.name) as group_members,
         ps.score_value
       FROM grading.group g
+      INNER JOIN grading.student s ON g.student_id = s.student_id
       CROSS JOIN UserGroup ug
       LEFT JOIN grading.report_peer_scores ps ON 
           ps.scored_group_id = g.group_id AND 
@@ -56,6 +58,7 @@ export async function GET(request) {
           ps.course_id = ?
       WHERE g.course_id = ?
         AND g.group_id != ug.group_id
+      GROUP BY g.group_id, ps.score_value
       ORDER BY g.group_id`;
 
     // Process the results
@@ -70,6 +73,7 @@ export async function GET(request) {
     // Transform the data for the frontend
     const groupScores = rows.map((row) => ({
       groupId: row.scored_group_id,
+      members: row.group_members.split(","),
       scoreValue: row.score_value || "",
     }));
 
