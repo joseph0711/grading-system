@@ -50,7 +50,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
       return;
     }
 
-    await onLogin(account, password, rememberMe);
+    // Clear everything immediately
+    toast.dismiss();
+    lastShownMessage.current = "";
+
+    try {
+      await onLogin(account, password, rememberMe);
+      toast.dismiss();
+      lastShownMessage.current = "";
+    } catch (error) {}
   };
 
   const handleInputChange = (
@@ -61,39 +69,45 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
       setSubmitted(false);
       setTouched({ account: false, password: false });
     }
+    toast.dismiss();
+    lastShownMessage.current = "";
     setter(e.target.value);
   };
 
   useEffect(() => {
-    const currentMessage = loginStatus.message;
-    const currentType = loginStatus.type;
-
-    if (
-      currentMessage &&
-      currentType &&
-      lastShownMessage.current !== currentMessage
-    ) {
-      // Dismiss any existing toasts first
+    if (loginStatus.message && loginStatus.type) {
       toast.dismiss();
-      lastShownMessage.current = currentMessage;
 
-      // Use a small timeout to ensure previous toasts are dismissed
-      setTimeout(() => {
-        switch (currentType) {
-          case "error":
-            toast.error(
-              currentMessage.includes("Account is locked")
-                ? t.accountLocked.replace(
-                    "{minutes}",
-                    Math.ceil(loginStatus.remainingTime!).toString()
-                  )
-                : currentMessage
-            );
-            break;
-          case "warning":
-            toast.warning(
-              loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0
-              ? t.loginFail + "\n" + t.loginWarningAttempts
+      // Skip if it's a success message or repeated message
+      if (
+        loginStatus.type === "info" ||
+        lastShownMessage.current === loginStatus.message
+      ) {
+        lastShownMessage.current = "";
+        return;
+      }
+
+      // Update last shown message
+      lastShownMessage.current = loginStatus.message;
+
+      // Only show error and warning toasts
+      switch (loginStatus.type) {
+        case "error":
+          toast.error(
+            loginStatus.message.includes("Account is locked")
+              ? t.accountLocked.replace(
+                  "{minutes}",
+                  Math.ceil(loginStatus.remainingTime!).toString()
+                )
+              : loginStatus.message
+          );
+          break;
+        case "warning":
+          toast.warning(
+            loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0
+              ? t.loginFail +
+                  "\n" +
+                  t.loginWarningAttempts
                     .replace("{attempts}", loginStatus.attemptsLeft.toString())
                     .replace(
                       "{minutes}",
@@ -101,16 +115,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
                         ? Math.ceil(loginStatus.remainingTime / 60).toString()
                         : ""
                     )
-                : currentMessage
-            );
-            break;
-          case "info":
-            toast.success(currentMessage);
-            break;
-        }
-      }, 100);
+              : loginStatus.message
+          );
+          break;
+      }
     }
-  }, [loginStatus.message]);
+
+    return () => {
+      toast.dismiss();
+      lastShownMessage.current = "";
+    };
+  }, [loginStatus, t]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">

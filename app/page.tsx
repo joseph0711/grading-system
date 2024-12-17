@@ -52,6 +52,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
+        setLoginStatus({ message: "", type: null });
         router.push("/select-course");
       } else if (res.status === 423) {
         setLoginStatus({
