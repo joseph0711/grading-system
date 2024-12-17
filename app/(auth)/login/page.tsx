@@ -93,7 +93,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, loginStatus, isLoading }) => {
           case "warning":
             toast.warning(
               loginStatus.attemptsLeft && loginStatus.attemptsLeft > 0
-                ? t.loginWarningAttempts
+              ? t.loginFail + "\n" + t.loginWarningAttempts
                     .replace("{attempts}", loginStatus.attemptsLeft.toString())
                     .replace(
                       "{minutes}",
