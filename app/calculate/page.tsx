@@ -196,7 +196,7 @@ export default function CalculatePage() {
   const handleSaveWeights = async () => {
     try {
       if (!validateWeights()) {
-        throw new Error("The total weight must be 100");
+        throw new Error(t.totalWeightMustBe100);
       }
 
       const weightValues = {
@@ -213,9 +213,8 @@ export default function CalculatePage() {
       setIsEditing(false);
       return true;
     } catch (error) {
-      console.error("Save weights error:", error);
       toast.error(
-        `Error saving weights: ${
+        `${t.saveWeightsError} ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
@@ -291,7 +290,6 @@ export default function CalculatePage() {
       toast.success(t.semesterScoresCalculatedAndSaved, {
         duration: 3000,
         position: "top-center",
-        icon: "🎉",
       });
       setIsWeightSectionCollapsed(true);
     } catch (error) {
