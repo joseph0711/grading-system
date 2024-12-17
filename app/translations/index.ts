@@ -281,7 +281,7 @@ export const translations = {
     noDataAvailable: "No data available",
     isRequired: "is required",
     loginFail: "Login failed!",
-    saveWeightsError: "Error saving weights: {error}",
+    saveWeightsError: "Error saving weights:",
     studentInfoUpdated: "Student information updated successfully!",
     errorUpdatingStudent: "Failed to update student information.",
     failedToUpdateStudent: "Failed to update student information.",
