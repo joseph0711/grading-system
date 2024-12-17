@@ -12,6 +12,7 @@ import { useSettings } from "../contexts/SettingsContext";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ManageCourseSkeleton from "../components/skeletons/ManageCourseSkeleton";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { toast } from "react-hot-toast";
 
 const ManageCoursePage = () => {
   usePageTitle("manageCourse");
@@ -130,8 +131,6 @@ const ManageCoursePage = () => {
 
   // Feedback message state
   const [loading, setLoading] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [feedbackType, setFeedbackType] = useState("success");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -232,24 +231,16 @@ const ManageCoursePage = () => {
           )
         );
         setIsEditModalOpen(false);
-        setFeedbackType("success");
-        setFeedbackMessage("Student information updated successfully!");
+        toast.success(t.studentInfoUpdated);
       } else {
         const error = await response.json();
-        setFeedbackType("error");
-        setFeedbackMessage(
-          error.message || "Failed to update student information."
-        );
+        toast.error(error.message || t.failedToUpdateStudent);
       }
     } catch (error) {
       console.error("Error during update:", error);
-      setFeedbackType("error");
-      setFeedbackMessage(
-        "An error occurred while updating student information."
-      );
+      toast.error(t.errorUpdatingStudent);
     } finally {
       setLoading(false);
-      setTimeout(() => setFeedbackMessage(""), 3000); // Clear message after 3 seconds
     }
   };
 
@@ -273,22 +264,16 @@ const ManageCoursePage = () => {
         setStudents((prevStudents) =>
           prevStudents.filter((student) => student.id !== currentStudent.id)
         );
-        setFeedbackType("success");
-        setFeedbackMessage(
-          `Student "${currentStudent.name}" deleted successfully!`
-        );
+        toast.success(`${t.studentDeleted} "${currentStudent.name}"`);
       } else {
-        setFeedbackType("error");
-        setFeedbackMessage(data.message || "Failed to delete student.");
+        toast.error(data.message || t.failedToDeleteStudent);
       }
     } catch (error) {
       console.error("Error during deletion:", error);
-      setFeedbackType("error");
-      setFeedbackMessage("An error occurred while deleting the student.");
+      toast.error(t.errorDeletingStudent);
     } finally {
-      setIsDeleteModalOpen(false); // Always close the modal
+      setIsDeleteModalOpen(false);
       setLoading(false);
-      setTimeout(() => setFeedbackMessage(""), 5000); // Show message for 5 seconds
     }
   };
 
@@ -312,22 +297,16 @@ const ManageCoursePage = () => {
           prevStudents.filter((student) => !selectedRows.includes(student.id))
         );
         setSelectedRows([]);
-        setFeedbackType("success");
-        setFeedbackMessage("Selected students deleted successfully!");
+        toast.success(t.selectedStudentsDeleted);
       } else {
-        setFeedbackType("error");
-        setFeedbackMessage(
-          data.message || "Failed to delete selected students."
-        );
+        toast.error(data.message || t.failedToDeleteSelectedStudents);
       }
     } catch (error) {
       console.error("Error during bulk deletion:", error);
-      setFeedbackType("error");
-      setFeedbackMessage("An error occurred while deleting selected students.");
+      toast.error(t.errorDeletingSelectedStudents);
     } finally {
-      setIsBulkDeleteDialogOpen(false); // Always close the modal
+      setIsBulkDeleteDialogOpen(false);
       setLoading(false);
-      setTimeout(() => setFeedbackMessage(""), 5000); // Show message for 5 seconds
     }
   };
 
@@ -352,23 +331,15 @@ const ManageCoursePage = () => {
       if (response.ok) {
         setCourseDescription(editedDescription);
         setIsEditDescriptionModalOpen(false);
-        setFeedbackType("success");
-        setFeedbackMessage("Course description updated successfully!");
+        toast.success(t.courseDescriptionUpdated);
       } else {
-        setFeedbackType("error");
-        setFeedbackMessage(
-          data.message || "Failed to update course description."
-        );
+        toast.error(data.message || t.failedToUpdateCourseDescription);
       }
     } catch (error) {
       console.error("Error updating course description:", error);
-      setFeedbackType("error");
-      setFeedbackMessage(
-        "An error occurred while updating the course description."
-      );
+      toast.error(t.errorUpdatingCourseDescription);
     } finally {
       setLoading(false);
-      setTimeout(() => setFeedbackMessage(""), 3000);
     }
   };
 
@@ -482,19 +453,6 @@ const ManageCoursePage = () => {
       ) : (
         <>
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Feedback Message */}
-            {feedbackMessage && (
-              <div
-                className={`mb-6 p-4 rounded-md ${
-                  feedbackType === "success"
-                    ? "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-300"
-                    : "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300"
-                }`}
-              >
-                {feedbackMessage}
-              </div>
-            )}
-
             {/* Course Info Card */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
               <div className="flex justify-between items-start mb-4">
