@@ -264,7 +264,7 @@ const ManageCoursePage = () => {
         setStudents((prevStudents) =>
           prevStudents.filter((student) => student.id !== currentStudent.id)
         );
-        toast.success(`${t.studentDeleted} "${currentStudent.name}"`);
+        toast.success(t.studentDeleted.replace("{name}", currentStudent.name));
       } else {
         toast.error(data.message || t.failedToDeleteStudent);
       }
