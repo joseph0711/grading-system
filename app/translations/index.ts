@@ -295,6 +295,8 @@ export const translations = {
     errorDeletingCourse: "Error deleting course.",
     failedToDeleteCourse: "Failed to delete course.",
     courseDescriptionUpdated: "Course description updated successfully!",
+    barChart: "Bar Chart",
+    pieChart: "Pie Chart",
   },
   zh: {
     appName: "給分核算系統",
@@ -321,7 +323,7 @@ export const translations = {
 
     // Grading sections
     attendance: "出缺席",
-    participation: "課堂參與",
+    participation: "參與度",
     midterm: "期中考",
     final: "期末考",
     peerGrading: "同儕互評",
@@ -470,7 +472,7 @@ export const translations = {
 
     // Teacher Grading Options
     attendanceGradingTitle: "出缺席",
-    attendanceGradingDesc: "管理學生出席記錄",
+    attendanceGradingDesc: "管理學生出缺席記錄",
     participationGradingTitle: "參與度",
     participationGradingDesc: "追蹤學生參與度情況",
     midtermGradingTitle: "期中考",
@@ -581,6 +583,8 @@ export const translations = {
     semesterScoresCalculatedAndSaved: "學期成績計算完成並儲存！",
     weightsSavedSuccessfully: "分數權重儲存成功！",
     scoreDistribution: "成績分布",
+    barChart: "長條圖",
+    pieChart: "圓餅圖",
     generateChart: "生成圖表",
     passFailRatio: "及格/不及格比例",
     studentScores: "學生成績",
@@ -611,5 +615,6 @@ export const translations = {
     errorUpdatingCourseDescription: "更新課程說明時發生錯誤。",
     failedToUpdateCourseDescription: "更新課程說明失敗。",
     courseDescriptionUpdated: "課程說明更新成功！",
+    selectedStudentsDeleted: "已成功刪除所選學生！",
   },
 }; 
