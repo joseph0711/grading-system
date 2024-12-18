@@ -704,7 +704,7 @@ export default function ViewScorePage() {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg relative">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {t.scoreDistribution}
+                    {t.barChart}
                   </h2>
                   {showBarChart && (
                     <button
@@ -774,7 +774,7 @@ export default function ViewScorePage() {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg relative">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {t.passFailRatio}
+                    {t.pieChart}
                   </h2>
                   {showPieChart && (
                     <button
